@@ -188,18 +188,16 @@ public class PredictedTransform : NetworkBehaviour
     private void OnServerTransformDataChanged(SyncedTransformData previousvalue, SyncedTransformData serverState)
     {
         if (!NetworkObject.IsOwner || IsServer) return;
+        
+        Debug.Log("[ServerDataChange] localTick: " + tickSystem.LocalTime.Tick + " serverTick: " + tickSystem.ServerTime.Tick + " serverStateTick: " + serverState.tick);
 
-        int tickOffset = tickSystem.LocalTime.Tick - tickSystem.ServerTime.Tick;
-        int localTick = serverState.tick + tickOffset;
+        var serverTick = serverState.tick;
+        var clientState = clientMovementDatas[serverTick % BUFFERSIZE];
 
-        if (localTick > currentTick - 1)
-            localTick = currentTick - 1;
+        if (clientState == null || clientState.tick != serverTick) 
+            return;
 
-        var clientState = clientMovementDatas[localTick % BUFFERSIZE];
-
-        if (clientState == null || clientState.tick != localTick) return;
-
-        HandlePositionError(serverState, clientState, localTick);
+        HandlePositionError(serverState, clientState, serverTick);
     }
 
     private void HandlePositionError(SyncedTransformData serverState, SyncedTransformData clientState, int localTick)
