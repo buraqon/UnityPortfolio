@@ -69,9 +69,11 @@ public class Movement_Controller : Movement_Handler
         return false;
     }
 
+    public bool CanJump => currentForceMovement == null && IsGrounded();
+
     public void Jump(MoveParams jumpParams)
     {
-        if (currentForceMovement != null)
+        if (!CanJump)
             return;
 
         HandleJump(jumpParams);

@@ -35,14 +35,38 @@ follows:
   GUID with no matching `.meta` in this project. Realigned
   `PredictedTransform_Debug.cs.meta`'s GUID to match (the prefab was otherwise untouched).
 
+## Status: test rig built, ready to start on the actual prediction bugs
+
+The scene/rig is wired up and playable:
+
+- **`PredictionPlayer.prefab`** — `NetworkObject` + `CharacterController` + `Input_Handler_Player` +
+  `Character_Movement` + `PredictedTransform`, plus a `CameraTarget` child (eye height, since the
+  root transform sits at the capsule's feet) and a `PlayerCamera` child carrying a
+  `CinemachineCamera` (`Target.TrackingTarget` → `CameraTarget`) with `CinemachineThirdPersonFollow`
+  as Body and no Aim component, so it doesn't fight the character's own mouse-look rotation.
+- **`Predicttion.unity`** — the demo scene: ground, `NetworkManager` (`PredictionPlayer` registered
+  in `DefaultNetworkPrefabs.asset`), `Main Camera` with a `CinemachineBrain` (was also found
+  disabled in the scene — re-enabled, since nothing would've rendered otherwise), and a
+  `CursorToggle` object (locks the cursor on start, Esc toggles lock/visibility so mouse-look works
+  without fighting the OS cursor).
+- **`Prediction_Actions.inputactions`** — Move/Look/Jump/Sprint action map feeding
+  `Input_Handler_Player`.
+- Found and fixed a real ordering bug while wiring `Character_Movement` up: it and `Input_Handler`
+  were both independently subscribing to `NetworkTickSystem.Tick`, so whether input was sampled
+  before movement read it depended on component order on the GameObject. Fixed by having
+  `Input_Handler.SampleTick()` be called explicitly by `Character_Movement.OnTick` instead of
+  self-subscribing.
+- Re-added a `CanJump` gate (`Movement_Controller.cs`) — `Jump()` previously only checked "not mid a
+  forced movement", with no grounded check at all, so holding jump while airborne reset vertical
+  velocity to jump height every tick (infinite jump/hover).
+
 ## What's NOT done yet
 
-- **No demo scene / player rig exists yet.** There's no scene, `NetworkManager`, or assembled
-  player prefab (`CharacterController` + `Input_Handler_Player` + `Character_Movement` +
-  `PredictedTransform`) to actually press Play and exercise this. `Demo_MovementDebug.prefab` is
-  just the debug line-renderer/silhouette visualizer and expects to be parented under an already-
-  working player.
-- The specific prediction issues to investigate haven't been discussed/identified yet.
+- **The actual prediction issues haven't been investigated yet.** Everything above was getting the
+  rig to a testable state - the specific bugs to chase (the "main objective") start next.
+- Camera ownership isn't gated: every `PredictionPlayer` instance's `CinemachineCamera` is
+  unconditionally live. Fine for one player in the scene; will need an `IsOwner` gate before testing
+  with more than one.
 
 ## Decisions / tradeoffs
 
@@ -50,3 +74,7 @@ follows:
   types for `SettingsManager`/`Match`/etc., to keep this feature self-contained like the rest of
   `Assets/Features/`. Tradeoff: reimporting fixes back to the source project is a manual merge, not
   a file copy.
+- Several scene/prefab edits (Cinemachine components, `CanJump`, `CursorToggle`) were hand-authored
+  YAML rather than done through the Editor, since Claude can't drive the Unity Editor UI directly.
+  Verified against Unity's own `Editor.log` where possible; otherwise flagged for the user to check
+  in-Editor before relying on them.
