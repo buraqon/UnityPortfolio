@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,7 +9,7 @@ public class PredictedTransform_Debug : MonoBehaviour
     [SerializeField] private GameObject playerSilhouette;
     [SerializeField] private int TrackingCount = 120;
     [SerializeField] private bool isDebug = false;
-    
+
     private List<Vector3> serverPositions = new();
     private List<Vector3> clientPositions = new();
 
@@ -19,7 +18,7 @@ public class PredictedTransform_Debug : MonoBehaviour
         transform.parent = null;
         if (!isDebug)
         {
-            Destroy(transform.gameObject);
+            Destroy(gameObject);
         }
     }
 
@@ -28,19 +27,19 @@ public class PredictedTransform_Debug : MonoBehaviour
         // create a cylinder to follow the player
         var serverPosition = predictedTransform.ServerPosition;
         var serverRotation = predictedTransform.ServerRotation;
-        
+
         serverPositions.Add(serverPosition);
         clientPositions.Add(predictedTransform.transform.position);
-        
+
         if (serverPositions.Count > TrackingCount)
         {
             serverPositions.RemoveAt(0);
             clientPositions.RemoveAt(0);
         }
-        
+
         playerSilhouette.transform.position = serverPosition;
         playerSilhouette.transform.rotation = serverRotation;
-        
+
         UpdateLineRenderer();
     }
 
@@ -48,7 +47,7 @@ public class PredictedTransform_Debug : MonoBehaviour
     {
         serverLineRenderer.positionCount = serverPositions.Count;
         clientLineRenderer.positionCount = clientPositions.Count;
-        
+
         for (int i = 0; i < serverPositions.Count; i++)
         {
             serverLineRenderer.SetPosition(i, serverPositions[i]);
