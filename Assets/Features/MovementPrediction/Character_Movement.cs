@@ -47,6 +47,7 @@ public class Character_Movement : Movement_Controller
     {
         var tick = tickSystem.LocalTime.Tick;
 
+        inputHandler.SampleTick();
         inputHandler.ResolveTickInput(tick);
 
         var moveDir = inputHandler.GetMoveDirection();

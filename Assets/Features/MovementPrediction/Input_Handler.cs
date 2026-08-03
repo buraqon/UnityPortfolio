@@ -12,8 +12,6 @@ public class Input_Handler : NetworkBehaviour
     protected bool sprintPressed;
     protected Transform characterTransform;
 
-    private NetworkTickSystem tickSystem => NetworkManager.Singleton.NetworkTickSystem;
-
     // Called once from Character.SetInputHandler so movement-direction resolution (see
     // GetWorldMoveDirection below) has access to the character's own transform.
     public void SetCharacterTransform(Transform t)
@@ -25,14 +23,6 @@ public class Input_Handler : NetworkBehaviour
     {
         if (!IsOwner) return;
         Init();
-        tickSystem.Tick += OnTick;
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        if (!IsOwner) return;
-        if (NetworkManager.Singleton != null)
-            tickSystem.Tick -= OnTick;
     }
 
     protected virtual void Init()
@@ -50,9 +40,17 @@ public class Input_Handler : NetworkBehaviour
 
     protected virtual void OnSampleFrameInput() { }
 
-    private void OnTick()
+    // Called once per tick by Character.OnTick(), before it reads any of the getters below -
+    // deliberately not self-subscribed to the tick event, since this and Character_Movement's own
+    // per-tick simulation both need to run in a fixed order (sample input, then simulate) and two
+    // independent subscribers on the same tick event give no guarantee which fires first.
+    public void SampleTick()
     {
-        if (!isActive)
+        // Guarded here (not just by the caller running IsOwner||IsServer) because UpdateMovement
+        // reads local Input System device state - running it on the server's copy of a remote
+        // player's Input_Handler would read the server machine's own input and stomp that
+        // player's real, network-received movement.
+        if (!IsOwner || !isActive)
             return;
 
         UpdateMovement();

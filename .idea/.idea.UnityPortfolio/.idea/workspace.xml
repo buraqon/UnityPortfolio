@@ -3,10 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Network/PredictedTransform.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Network/PredictedTransform.cs.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Network/PredictedTransform_Debug.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Network/PredictedTransform_Debug.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/DefaultNetworkPrefabs.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/DefaultNetworkPrefabs.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MovementPrediction/Character_Movement.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MovementPrediction/Character_Movement.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MovementPrediction/Input_Handler.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MovementPrediction/Input_Handler.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,7 +87,7 @@
       <updated>1785769439383</updated>
       <workItem from="1785769439384" duration="3000" />
       <workItem from="1785770282002" duration="34000" />
-      <workItem from="1785770332746" duration="1076000" />
+      <workItem from="1785770332746" duration="2387000" />
     </task>
     <servers />
   </component>
