@@ -163,7 +163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2517918143
+  GlobalObjectIdHash: 1063899840
   InScenePlacedSourceGlobalObjectIdHash: 1063899840
   DeferredDespawnTick: 0
   Ownership: 1
@@ -3343,7 +3343,7 @@ MonoBehaviour:
   Speed: 5
   moveParams:
     height: 10
-    gravityMultiplier: 0.5
+    gravityMultiplier: 1
     distanceCovered: 10
     time: 1
   controller: {fileID: 6740719233106469506}
