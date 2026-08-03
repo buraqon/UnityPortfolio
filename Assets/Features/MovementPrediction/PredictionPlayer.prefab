@@ -239,11 +239,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   positionError: 1
   positionErrorPassiveFix: 0.05
-  positionLerpSpeed: 10
-  errorTickThreshold: 10
-  hardResetDistance: 8
-  rotationLerpSpeed: 10
-  logPositionError: 0
+  positionLerpSpeed: 60
+  errorTickThreshold: 5
+  hardResetDistance: 3
+  rotationLerpSpeed: 60
+  logPositionError: 1
   logRotation: 0
   clientMovementDatas:
   - tick: 0
