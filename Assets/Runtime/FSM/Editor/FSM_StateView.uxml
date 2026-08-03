@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/HippoLib/Runtime/FSM/Editor/FSM_StateView.uss?fileID=7433441132597879392&amp;guid=e4168f20d296aa345b5a36a634d34d64&amp;type=3#FSM_StateView" />
+    <ui:VisualElement name="node-border">
+        <ui:VisualElement name="contents">
+            <ui:VisualElement name="top">
+                <ui:VisualElement name="title">
+                    <ui:Foldout value="false" name="Foldout" />
+                    <ui:Label name="title-label" text="FSM_State_Roam" enabled="true" class="unity-text-element unity-label title" />
+                    <ui:TextField class="title" />
+                </ui:VisualElement>
+                <ui:VisualElement name="Ports">
+                    <ui:VisualElement name="input" />
+                    <ui:VisualElement name="output" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="Values" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

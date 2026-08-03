@@ -1,0 +1,49 @@
+#node-border {
+    background-color: rgb(56, 56, 56);
+}
+
+#input {
+    height: 30px;
+    width: 50%;
+    flex-direction: row;
+}
+
+#output {
+    height: 30px;
+    width: 50%;
+    flex-direction: row-reverse;
+}
+
+#Ports {
+    flex-direction: row;
+}
+
+#title {
+    flex-wrap: nowrap;
+    flex-direction: row;
+}
+
+.title {
+    color: rgb(255, 255, 255);
+    padding-top: 5px;
+    left: -5px;
+    min-width: 120px;
+}
+
+#Foldout {
+    padding-top: 2.5px;
+}
+
+#Values {
+    display: none;
+    padding-top: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+    padding-left: 5px;
+}
+
+TextField {
+    top: auto;
+    margin-top: -2.5px;
+    display: none;
+}

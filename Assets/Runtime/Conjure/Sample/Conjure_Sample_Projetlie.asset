@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d4f273dbb53e4540981d2f531c539e4, type: 3}
+  m_Name: Conjure_Sample_Projetlie
+  m_EditorClassIdentifier: 
+  conjurePrefab: {fileID: -5117051244219109172, guid: edb8d5998313d9740a38dcd4187a457b,
+    type: 3}
+  isLookAtAiming: 1
+  _range: 15
+  _chainedConjure: {fileID: 0}
+  LingerTime: 0.3
+  Speed: 60
+  Radius: 0.1

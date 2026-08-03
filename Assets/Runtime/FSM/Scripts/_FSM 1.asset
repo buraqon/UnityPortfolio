@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6685e5441e47ffc4bb434597a4201b47, type: 3}
+  m_Name: _FSM 1
+  m_EditorClassIdentifier: 
+  States:
+  - {fileID: 5921094684842155916}
+--- !u!114 &5921094684842155916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0e0782bb6f0ff84984fc70be7ebcb89, type: 3}
+  m_Name: test1
+  m_EditorClassIdentifier: 
+  transitions:
+    Transitions: []
+  guid: aefdbb0d0b7cf6a48869e15d09545489
+  graphPosition: {x: 0, y: 0}
+  state: {fileID: 0}

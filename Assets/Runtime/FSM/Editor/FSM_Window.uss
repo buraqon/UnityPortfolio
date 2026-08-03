@@ -1,0 +1,29 @@
+GridBackground {
+    --grid-background-color: rgb(40, 40, 40);
+    --line-color: rgba(193, 196, 192, 0.1);
+    --thick-line-color: rgba(193, 196, 192, 0.1);
+    --spacing: 15;
+}
+
+#FSM_View {
+    width: 100%;
+    height: 100%;
+}
+
+#InspectorView {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background-color: rgb(67, 67, 67);
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    min-width: 300px;
+    display: none;
+}
+
+#VisualElement {
+    width: 100%;
+    height: 100%;
+}
