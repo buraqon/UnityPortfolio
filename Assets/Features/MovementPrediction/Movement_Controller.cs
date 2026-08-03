@@ -86,7 +86,7 @@ public class Movement_Controller : Movement_Handler
 
     protected virtual void HandleJump(MoveParams jumpParams)
     {
-        OnJumped.Invoke();
+        OnJumped?.Invoke();
         velocity.y = Mathf.Sqrt(jumpParams.height * -(jumpParams.gravityMultiplier * gravity));
     }
 
