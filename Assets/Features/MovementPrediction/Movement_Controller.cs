@@ -17,8 +17,6 @@ public class Movement_Controller : Movement_Handler
 
     public Vector3 Velocity => velocity;
 
-    // Used by PredictedTransform's reconciliation replay to reset velocity to what it was
-    // right after a confirmed tick, before re-simulating forward from there.
     public void RestoreVelocity(Vector3 restoredVelocity)
     {
         velocity = restoredVelocity;
@@ -28,11 +26,6 @@ public class Movement_Controller : Movement_Handler
 
     public Force_Movement CurrentForceMovement => currentForceMovement;
 
-    // Takes an already-world-space direction (see Input_Handler.GetWorldMoveDirection) instead
-    // of combining local input with transform.forward/right itself - that combination used to
-    // happen here, using whichever machine's own (possibly stale, for a networked owner) facing
-    // was current when this ran, which is exactly what caused large velocity-direction
-    // mismatches between client and server during fast turns.
     public void CalculateVelocity(Vector3 worldMoveDirection, MovementState movementState)
     {
         if (currentForceMovement != null)
@@ -102,12 +95,6 @@ public class Movement_Controller : Movement_Handler
 
         if (currentForceMovement != null)
         {
-            // Interrupt-and-replace instead of silently dropping the new request: dropping it
-            // discarded the new request's onMovementDone entirely, so whichever ability's
-            // pause/movement-lock state (set up by the caller before calling AddForceMovement)
-            // depended on that callback for cleanup never got un-done - permanently soft-locking
-            // the character. Run the interrupted movement's own completion callback first so its
-            // state resets properly, then start the new one.
             currentForceMovement.EndMovement();
             OnMovementDone();
         }

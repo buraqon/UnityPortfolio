@@ -49,8 +49,6 @@ public abstract class Movement_Handler : NetworkBehaviour
         UpdateMovementStats();
     }
 
-    // public abstract void Move(Vector2 moveDir, MovementState movementState);
-    // public abstract void Jump(MoveParams jumpParams);
     public abstract bool IsGrounded();
     public abstract void OnUpdate(Vector2 moveDir);
 
@@ -75,11 +73,6 @@ public abstract class Movement_Handler : NetworkBehaviour
     protected void SetSpeed(float speed)
     {
         Speed = speed;
-
-        // Only ever called from Character_Movement.SetStartSpeed (the character's real,
-        // per-type stat, applied once at spawn) - baseSpeed must move with it, or
-        // ResetMovement() (run on every death) would reset Speed back to whatever the shared
-        // prefab default was cached as in OnNetworkSpawn, before this ever ran.
         baseSpeed = speed;
     }
 
@@ -103,8 +96,6 @@ public abstract class Movement_Handler : NetworkBehaviour
         return Speed * speedMultiplier;
     }
 
-    // Split out for diagnostics - GetSpeed() alone can't tell you whether a client/server
-    // mismatch comes from the base character stat or an active multiplier/effect.
     public float GetBaseSpeed() => Speed;
     public float GetSpeedMultiplier() => speedMultiplier;
 

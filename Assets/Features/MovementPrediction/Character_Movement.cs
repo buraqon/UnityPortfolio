@@ -1,11 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
 
-// Ties Input_Handler + Movement_Controller + PredictedTransform together for this demo: reads
-// this tick's input, runs one simulation step, and hands the result to PredictedTransform for
-// its replay buffer. SimulateTick is that same simulation step, re-run in isolation from buffered
-// past input during reconciliation replay - the two must stay in lockstep or replay would diverge
-// from what actually happened live.
 public class Character_Movement : Movement_Controller
 {
     [SerializeField] private float startSpeed = 5f;

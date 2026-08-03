@@ -51,10 +51,6 @@ public class Input_Handler_Player : Input_Handler
     private const int DelayBufferSize = 64; // ~2s of history at 30Hz - comfortably covers any sane delay
     private readonly DelayedMoveInput[] delayBuffer = new DelayedMoveInput[DelayBufferSize];
 
-    // Server-side receive buffer, keyed by the tick the owner tagged the input with (not by
-    // arrival order). ResolveTickInput reads this against the server's own current tick so
-    // Character.OnTick() consumes exactly the input the owner used for that tick - never a
-    // newer tick's input that happened to arrive early, and never silently the wrong tick.
     private readonly DelayedMoveInput[] receivedMoveBuffer = new DelayedMoveInput[DelayBufferSize];
     private DelayedMoveInput lastConfirmedMoveInput;
 
@@ -122,13 +118,6 @@ public class Input_Handler_Player : Input_Handler
         return worldMoveDirection;
     }
 
-    // Server's per-tick alignment step for a remote-owned character - the owner's own instance
-    // (IsOwner) already has fresh values for this tick from OnUpdateMovement below, so this only
-    // does anything for IsServer && !IsOwner. Picks the buffered input tagged with this exact
-    // tick if it's arrived, otherwise holds at the last confirmed (older) input rather than
-    // reading whatever the most recent RPC happened to leave in the plain fields - that could be
-    // this tick's data, stale data, or (if it arrived early) a later tick's data consumed too
-    // soon.
     public override void ResolveTickInput(int tick)
     {
         if (!IsServer || IsOwner) return;
@@ -267,11 +256,6 @@ public class Input_Handler_Player : Input_Handler
             PredictedTransform.WriteLog(true, recvMsg);
         }
 
-        // Buffered by tick, not written directly - ResolveTickInput (called once per tick from
-        // Character.OnTick()) is what actually applies this to moveDirection/worldMoveDirection/
-        // jumpPressed/sprintPressed, matched against the server's own current tick. Writing
-        // straight through here would let whichever RPC happens to arrive most recently govern
-        // simulation regardless of which tick the server is actually advancing.
         var entry = new DelayedMoveInput
         {
             tick = tick,

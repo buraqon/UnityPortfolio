@@ -36,12 +36,7 @@ public abstract class Force_Movement
     {
         return timer;
     }
-
-    // Used by PredictedTransform's reconciliation replay to rewind this forced-movement's
-    // countdown and velocity to what they were right after a confirmed tick, before
-    // re-simulating forward. Movement_Controller.OnUpdate overwrites its own velocity from
-    // this object's GetVelocity() every tick while a forced movement is active, so both need
-    // restoring together or the controller's copy gets clobbered on the very next tick.
+    
     public void RestoreTimer(float restoredTimer)
     {
         timer = restoredTimer;
