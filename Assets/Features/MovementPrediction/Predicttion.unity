@@ -681,14 +681,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4764429496999525798, guid: eead2da1d44c1674ba861daef2121c58, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1711715360}
   m_SourcePrefab: {fileID: 100100000, guid: eead2da1d44c1674ba861daef2121c58, type: 3}
 --- !u!114 &1670700523 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7127058425064746040, guid: eead2da1d44c1674ba861daef2121c58, type: 3}
   m_PrefabInstance: {fileID: 1670700522}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1711715358}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
@@ -699,12 +702,50 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8712902202578336088, guid: eead2da1d44c1674ba861daef2121c58, type: 3}
   m_PrefabInstance: {fileID: 1670700522}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1711715358}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 593a2fe42fa9d37498c96f9a383b6521, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1711715358 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4764429496999525798, guid: eead2da1d44c1674ba861daef2121c58, type: 3}
+  m_PrefabInstance: {fileID: 1670700522}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1711715360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1711715358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98d9db9626104da59357651088226725, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Multiplayer.Tools.NetworkSimulator.Runtime::Unity.Multiplayer.Tools.NetworkSimulator.Runtime.NetworkSimulator
+  m_PresetAsset: {fileID: 0}
+  m_PresetReference:
+    rid: 2841662616977801401
+  m_Scenario:
+    rid: -2
+  m_IsScenarioSettingsFolded: 0
+  AutoRunScenario: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 2841662616977801401
+      type: {class: NetworkSimulatorPreset, ns: Unity.Multiplayer.Tools.NetworkSimulator.Runtime, asm: Unity.Multiplayer.Tools.NetworkSimulator.Runtime}
+      data:
+        <Name>k__BackingField: None
+        <Description>k__BackingField: 
+        <PacketDelayMs>k__BackingField: 0
+        <PacketJitterMs>k__BackingField: 0
+        <PacketLossInterval>k__BackingField: 0
+        <PacketLossPercent>k__BackingField: 0
 --- !u!1 &1758280237
 GameObject:
   m_ObjectHideFlags: 0

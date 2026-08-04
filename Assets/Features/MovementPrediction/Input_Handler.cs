@@ -70,6 +70,12 @@ public class Input_Handler : NetworkBehaviour
     protected virtual void OnUpdateMovement() { }
     
     public virtual void ResolveTickInput(int tick) { }
+    
+    public virtual int GetCurrentTick() => -1;
+
+    public virtual bool HasQueuedServerInputs() => false;
+    public virtual void SortServerInputQueue() { }
+    public virtual int DequeueNextServerInput() => -1;
 
     public Vector2 GetMoveDirection() => moveDirection;
 

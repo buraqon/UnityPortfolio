@@ -83,6 +83,14 @@ public class Character_Movement : NetworkBehaviour
     {
         var tick = tickSystem.LocalTime.Tick;
 
+        // Server processing a remote client: use the input queue
+        if (IsServer && !IsOwner && inputHandler != null)
+        {
+            ProcessRemoteClientTick();
+            return;
+        }
+
+        // Client owner or server-owned character: original flow
         inputHandler.SampleTick();
         inputHandler.ResolveTickInput(tick);
 
@@ -95,6 +103,45 @@ public class Character_Movement : NetworkBehaviour
         SimulateTick(moveDir, worldMoveDir, lookDir, movementState, jumpPressed);
 
         predictedTransform?.RecordTickState(tick, moveDir, worldMoveDir, lookDir, movementState, jumpPressed, Velocity, CurrentForceMovement);
+        predictedTransform?.ProcessTick(tick);
+    }
+
+    private void ProcessRemoteClientTick()
+    {
+        if (!inputHandler.HasQueuedServerInputs())
+            return; // No input arrived this tick - do NOT simulate to keep step count deterministic
+
+        inputHandler.SortServerInputQueue();
+
+        var lookDir = inputHandler.GetLookDirection();
+        int lastClientTick = -1;
+        Vector2 lastMoveDir = Vector2.zero;
+        Vector3 lastWorldMoveDir = Vector3.zero;
+        MovementState lastMovementState = MovementState.None;
+        bool lastJumpPressed = false;
+
+        int clientTick;
+        while ((clientTick = inputHandler.DequeueNextServerInput()) != -1)
+        {
+            var moveDir = inputHandler.GetMoveDirection();
+            var worldMoveDir = inputHandler.GetWorldMoveDirection();
+            var movementState = inputHandler.GetMovementState();
+            var jumpPressed = inputHandler.JumpPressed();
+
+            SimulateTick(moveDir, worldMoveDir, lookDir, movementState, jumpPressed);
+
+            lastClientTick = clientTick;
+            lastMoveDir = moveDir;
+            lastWorldMoveDir = worldMoveDir;
+            lastMovementState = movementState;
+            lastJumpPressed = jumpPressed;
+        }
+
+        if (lastClientTick != -1)
+        {
+            predictedTransform?.RecordTickState(lastClientTick, lastMoveDir, lastWorldMoveDir, lookDir, lastMovementState, lastJumpPressed, Velocity, CurrentForceMovement);
+            predictedTransform?.ProcessTick(lastClientTick);
+        }
     }
 
     public void SimulateTick(Vector2 moveDir, Vector3 worldMoveDir, Vector3 lookDir, MovementState movementState, bool jumpPressed)
@@ -170,6 +217,16 @@ public class Character_Movement : NetworkBehaviour
 
     public float GetBaseSpeed() => Speed;
     public float GetSpeedMultiplier() => speedMultiplier;
+
+    public int GetSimulatedTick()
+    {
+        if (inputHandler != null)
+        {
+            var t = inputHandler.GetCurrentTick();
+            if (t != -1) return t;
+        }
+        return tickSystem.LocalTime.Tick;
+    }
 
     public virtual void ResetMovement()
     {

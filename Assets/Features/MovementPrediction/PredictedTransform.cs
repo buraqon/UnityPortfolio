@@ -64,7 +64,6 @@ public class PredictedTransform : NetworkBehaviour
     {
         movementController = GetComponent<Character_Movement>();
         serverTransformData.OnValueChanged += OnServerTransformDataChanged;
-        tickSystem.Tick += OnTick;
     }
 
     public void RecordTickState(int tick, Vector2 moveDir, Vector3 worldMoveDir, Vector3 lookDir, MovementState movementState,
@@ -87,13 +86,11 @@ public class PredictedTransform : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         serverTransformData.OnValueChanged -= OnServerTransformDataChanged;
-        if (NetworkManager.Singleton != null)
-            tickSystem.Tick -= OnTick;
     }
 
-    private void OnTick()
+    public void ProcessTick(int tick)
     {
-        currentTick = tickSystem.LocalTime.Tick;
+        currentTick = tick;
         SyncTransform();
     }
 
@@ -101,16 +98,18 @@ public class PredictedTransform : NetworkBehaviour
     {
         if (IsServer)
         {
+            var simulatedTick = movementController != null ? movementController.GetSimulatedTick() : currentTick;
+
             serverTransformData.Value = new SyncedTransformData
             {
-                tick = currentTick,
+                tick = simulatedTick,
                 rotation = transform.rotation,
                 position = transform.position
             };
 
             if (logPositionError && movementController != null && !NetworkObject.IsOwnedByServer)
             {
-                var msg = $"[PosError-Server] netId={NetworkObjectId} name={gameObject.name} tick={currentTick} " +
+                var msg = $"[PosError-Server] netId={NetworkObjectId} name={gameObject.name} tick={simulatedTick} " +
                            $"pos=({transform.position.x:F4},{transform.position.y:F4},{transform.position.z:F4}) " +
                            $"rotY={transform.rotation.eulerAngles.y:F2} " +
                            $"speed={movementController.GetSpeed():F4} baseSpeed={movementController.GetBaseSpeed():F4} speedMultiplier={movementController.GetSpeedMultiplier():F4} " +

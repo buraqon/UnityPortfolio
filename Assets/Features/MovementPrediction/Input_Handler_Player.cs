@@ -54,6 +54,8 @@ public class Input_Handler_Player : Input_Handler
     private readonly DelayedMoveInput[] receivedMoveBuffer = new DelayedMoveInput[DelayBufferSize];
     private DelayedMoveInput lastConfirmedMoveInput;
 
+    private readonly System.Collections.Generic.List<DelayedMoveInput> serverInputQueue = new System.Collections.Generic.List<DelayedMoveInput>();
+
     private float adaptiveDelayTicksSmoothed = -1f;
     private float lastAdaptiveEvalTime = -999f;
 
@@ -118,6 +120,41 @@ public class Input_Handler_Player : Input_Handler
         return worldMoveDirection;
     }
 
+    private int currentInputTick = -1;
+
+    public override int GetCurrentTick()
+    {
+        if (IsOwner)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.NetworkTickSystem != null)
+                return NetworkManager.Singleton.NetworkTickSystem.LocalTime.Tick;
+        }
+        return currentInputTick;
+    }
+
+    public override bool HasQueuedServerInputs() => serverInputQueue.Count > 0;
+
+    public override void SortServerInputQueue()
+    {
+        serverInputQueue.Sort((a, b) => a.tick.CompareTo(b.tick));
+    }
+
+    public override int DequeueNextServerInput()
+    {
+        if (serverInputQueue.Count == 0) return -1;
+
+        var input = serverInputQueue[0];
+        serverInputQueue.RemoveAt(0);
+
+        currentInputTick = input.tick;
+        moveDirection = input.moveDir;
+        worldMoveDirection = input.worldMoveDir;
+        jumpPressed = input.jump;
+        sprintPressed = input.sprint;
+
+        return input.tick;
+    }
+
     public override void ResolveTickInput(int tick)
     {
         if (!IsServer || IsOwner) return;
@@ -126,6 +163,7 @@ public class Input_Handler_Player : Input_Handler
         var resolved = (buffered != null && buffered.tick == tick) ? buffered : lastConfirmedMoveInput;
         if (resolved == null) return; // nothing received yet at all (e.g. just spawned)
 
+        currentInputTick = resolved.tick;
         moveDirection = resolved.moveDir;
         worldMoveDirection = resolved.worldMoveDir;
         jumpPressed = resolved.jump;
@@ -266,5 +304,6 @@ public class Input_Handler_Player : Input_Handler
         };
         receivedMoveBuffer[tick % DelayBufferSize] = entry;
         lastConfirmedMoveInput = entry;
+        serverInputQueue.Add(entry);
     }
 }
