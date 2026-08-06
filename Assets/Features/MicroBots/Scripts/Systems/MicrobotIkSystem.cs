@@ -8,12 +8,23 @@ namespace HippoLib.MicroBots
     [BurstCompile]
     public partial struct MicrobotIkSystem : ISystem
     {
+        private const float TargetMoveSpeed = 1f;
+
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            SystemAPI.TryGetSingleton<MicrobotToggleRequest>(out var toggleRequest);
-            var toggleBase = toggleRequest.Toggled;
+            SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
+            var toggleBase = inputState.ToggleBase;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
+
+            var moveDelta = math.normalizesafe(inputState.MoveInput, float3.zero) * TargetMoveSpeed * SystemAPI.Time.DeltaTime;
+            foreach (var ikTarget in SystemAPI.Query<RefRO<MicrobotIkTarget>>().WithAll<MicrobotTag>())
+            {
+                var targetEntity = ikTarget.ValueRO.TargetEntity;
+                var targetTransform = transforms[targetEntity];
+                targetTransform.Position += moveDelta;
+                transforms[targetEntity] = targetTransform;
+            }
 
             foreach (var (segments, ikTarget, ikState, transform) in SystemAPI
                          .Query<RefRO<MicrobotSegments>, RefRO<MicrobotIkTarget>, RefRW<MicrobotIkState>, RefRW<LocalTransform>>()
