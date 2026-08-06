@@ -13,23 +13,26 @@ namespace HippoLib.MicroBots
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            state.CompleteDependency();
+
             SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
             var toggleBase = inputState.ToggleBase;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
 
             var moveDelta = math.normalizesafe(inputState.MoveInput, float3.zero) * TargetMoveSpeed * SystemAPI.Time.DeltaTime;
-            foreach (var ikTarget in SystemAPI.Query<RefRO<MicrobotIkTarget>>().WithAll<MicrobotTag>())
-            {
-                var targetEntity = ikTarget.ValueRO.TargetEntity;
-                var targetTransform = transforms[targetEntity];
-                targetTransform.Position += moveDelta;
-                transforms[targetEntity] = targetTransform;
-            }
 
             foreach (var (segments, ikTarget, ikState, transform) in SystemAPI
                          .Query<RefRO<MicrobotSegments>, RefRO<MicrobotIkTarget>, RefRW<MicrobotIkState>, RefRW<LocalTransform>>()
                          .WithAll<MicrobotTag>())
             {
+                if (ikState.ValueRO.IsManualMovement)
+                {
+                    var targetEntity = ikTarget.ValueRO.TargetEntity;
+                    var targetTransform = transforms[targetEntity];
+                    targetTransform.Position += moveDelta;
+                    transforms[targetEntity] = targetTransform;
+                }
+
                 if (toggleBase)
                 {
                     ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;

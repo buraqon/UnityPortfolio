@@ -11,6 +11,11 @@ namespace HippoLib.MicroBots
         public float segmentBLength = 0.4f;
         public Vector3 destination;
         public Transform target;
+        public bool isManualMovement = true;
+        public float stepSize = 0.3f;
+        public float stepSpeed = 1f;
+        public float stepHeight = 0.15f;
+        public AnimationCurve stepCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.5f, 1f), new Keyframe(1f, 0f));
 
         private class Baker : Baker<MicrobotAuthoring>
         {
@@ -22,7 +27,19 @@ namespace HippoLib.MicroBots
                 {
                     Destination = authoring.destination
                 });
-                AddComponent(root, new MicrobotIkState());
+                AddComponent(root, new MicrobotIkState
+                {
+                    IsManualMovement = authoring.isManualMovement
+                });
+
+                AddComponentObject(root, new MicrobotStepSettings
+                {
+                    StepSize = authoring.stepSize,
+                    StepSpeed = authoring.stepSpeed,
+                    StepHeight = authoring.stepHeight,
+                    StepCurve = authoring.stepCurve
+                });
+                AddComponent(root, new MicrobotStepState());
 
                 DependsOn(authoring.target);
                 var targetEntity = GetEntity(authoring.target, TransformUsageFlags.Dynamic);
