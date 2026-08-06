@@ -4,9 +4,6 @@
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotIkState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotIkState.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotIkSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotIkSystem.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -110,7 +107,7 @@
       <workItem from="1785944463081" duration="539000" />
       <workItem from="1786014769289" duration="5176000" />
       <workItem from="1786024292106" duration="3664000" />
-      <workItem from="1786048777364" duration="9788000" />
+      <workItem from="1786048777364" duration="10409000" />
     </task>
     <servers />
   </component>

@@ -30,9 +30,9 @@ namespace HippoLib.MicroBots
                 if (!stepping && math.abs(inputState.MoveInput.y) > 0.0001f)
                 {
                     var direction = math.sign(inputState.MoveInput.y);
-                    var currentPosition = transforms[targetEntity].Position;
-                    stepState.ValueRW.StepStartPosition = currentPosition;
-                    stepState.ValueRW.StepTargetPosition = currentPosition + new float3(0f, 0f, direction * stepSettings.StepSize);
+                    var anchorPos = ikState.ValueRO.AnchorWorldPosition;
+                    stepState.ValueRW.StepStartPosition = transforms[targetEntity].Position;
+                    stepState.ValueRW.StepTargetPosition = anchorPos + new float3(0f, 0f, direction * stepSettings.StepSize);
                     stepState.ValueRW.StepProgress = 0f;
                     stepState.ValueRW.Initialized = true;
                     stepping = true;
