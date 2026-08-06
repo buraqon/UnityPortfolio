@@ -10,6 +10,7 @@ namespace HippoLib.MicroBots
         public Transform segmentB;
         public float segmentBLength = 0.4f;
         public Vector3 destination;
+        public Transform target;
 
         private class Baker : Baker<MicrobotAuthoring>
         {
@@ -20,6 +21,14 @@ namespace HippoLib.MicroBots
                 AddComponent(root, new MicrobotMovementTarget
                 {
                     Destination = authoring.destination
+                });
+                AddComponent(root, new MicrobotIkState());
+
+                DependsOn(authoring.target);
+                var targetEntity = GetEntity(authoring.target, TransformUsageFlags.Dynamic);
+                AddComponent(root, new MicrobotIkTarget
+                {
+                    TargetEntity = targetEntity
                 });
 
                 DependsOn(authoring.segmentA);

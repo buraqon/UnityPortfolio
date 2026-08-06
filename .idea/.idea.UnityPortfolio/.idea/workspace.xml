@@ -3,18 +3,10 @@
   <component name="ChangeListManager">
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_Conjure.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_Conjure.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_ConjureEnemy.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_ConjureEnemy.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoUser_Conjure.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoUser_Conjure.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/MicroBots.asmdef" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/MicroBots.asmdef" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Movement/Demo/DemoUser_Movement.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Movement/Demo/DemoUser_Movement.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/Network/Demo/DemoUser_Input.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Network/Demo/DemoUser_Input.prefab" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PROJECT_RULES.md" beforeDir="false" afterPath="$PROJECT_DIR$/PROJECT_RULES.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,6 +20,7 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/554A01C2571EC0C7644C8151/SystemGenerator/Unity.Entities.SourceGen.SystemGenerator.SystemGenerator/MicrobotIkSystem__System_18665821740.g.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/EB0095E242D3B168611467B4/JobEntityGenerator/Unity.Entities.SourceGen.JobEntityGenerator.JobEntityGenerator/RotationSpeedSystem__JobEntity_119327154415.g.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Features/ECSDemo/CubeSpawnerSystem.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.entities@d66668920c3f/Unity.Entities.Hybrid/Baking/Baker.cs" root0="SKIP_HIGHLIGHTING" />
@@ -115,7 +108,7 @@
       <workItem from="1785944463081" duration="539000" />
       <workItem from="1786014769289" duration="5176000" />
       <workItem from="1786024292106" duration="3664000" />
-      <workItem from="1786048777364" duration="334000" />
+      <workItem from="1786048777364" duration="6739000" />
     </task>
     <servers />
   </component>

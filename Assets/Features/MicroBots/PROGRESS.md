@@ -86,7 +86,41 @@ spawner are explicitly paused — see "Paused scope" below.
 
 ## Status
 
-What exists on disk: `MicrobotTag`, `MicrobotMovementTarget`, `MicrobotSegments` components, and
-`MicrobotAuthoring` (bakes a root entity + 2 segment entities from `segmentA`/`segmentB` transform
-references, lengths, and a destination). No locomotion/movement system exists — the bot currently has
-shape but no way to move. Being built step by step from here.
+Step 1 (verified working): extremity A's tip anchored, root solved via 2-bone planar IK so extremity B
+reaches toward a live target Transform.
+
+Step 2 (just added, not yet verified): which extremity is the fixed base vs. the target-following end
+is now a toggle (`MicrobotAuthoring.useSegmentBAsBase`, baked into `MicrobotIkState.BaseIsSegmentB`) —
+editable in the Inspector at authoring time, or live in Play mode via the Entity Inspector. The IK math
+itself (`SolveElbowPlanar`/`LocalDirectionRotation`) is unchanged; only role assignment (which segment
+is base/end) is now driven by the toggle instead of hardcoded to A. The base/end toggle is a runtime key press (`T`), not an authoring-time checkbox —
+`MicrobotAuthoring.useSegmentBAsBase` was removed. Input reading is split into its own system
+(`MicrobotInputSystem`, not Burst-compiled — it calls the managed `Keyboard.current` API) which writes
+a `MicrobotToggleRequest` singleton each frame; `MicrobotIkSystem` reads that singleton and stays
+`[BurstCompile]`. `MicrobotInputSystem` is ordered `[UpdateBefore(typeof(MicrobotIkSystem))]` so the IK
+system always sees the current frame's input, not the previous frame's. Toggling recomputes the anchor
+from whichever segment is newly selected, reading its *current* live rotation (not its authored rest
+pose) via `ComputeTipWorldPosition`. Back to a single shared target (`MicrobotAuthoring.target` — the
+targetA/targetB split was tried and reverted) — instead, on an actual toggle (not the first-ever init),
+the target's own world position is snapped to wherever the *old* anchor was, so the newly-freed segment
+starts reaching from right where it left off instead of jumping toward an unrelated point. The
+distinction between "first init" and "real toggle" matters here — snapping only happens on a real
+toggle (`isToggle`), not on the very first frame when there's no meaningful "old" position yet.
+
+`forward` (the IK's bend-plane direction) is derived from anchor→target — this is load-bearing, not
+arbitrary: the planar-projection distance math only equals the true anchor-target distance when
+`forward` is anchor-based, since it's literally defined as that vector's horizontal direction. Two
+attempts at smoothing the visual transition at the toggle instant (skipping the solve for one frame;
+deriving `forward` from root→target instead) both regressed the base case and were reverted — back to
+this simpler, correct version (also recovered from a subsequent hand-edit that broke the build,
+`BaseIsB`/`baseIsB` referenced but never declared). The toggle-transition smoothness question is
+unresolved and not currently being pursued.
+
+The target now moves live via `WASD` (`MicrobotInputSystem`, same non-Burst system as the toggle key)
+instead of being driven by its authored Transform — `W`/`S` move it along Y (up/down), `A`/`D` along Z
+(back/forward), X stays fixed. The authored `target` Transform position is now just the starting spawn
+point, not a continuously-followed source.
+
+What exists on disk: `MicrobotTag`, `MicrobotMovementTarget` (currently unused by the IK system),
+`MicrobotSegments`, `MicrobotIkTarget`, `MicrobotIkState`, `MicrobotToggleRequest` components;
+`MicrobotAuthoring`; `MicrobotIkSystem`; `MicrobotInputSystem`.
