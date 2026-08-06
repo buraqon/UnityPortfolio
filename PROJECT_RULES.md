@@ -23,3 +23,14 @@ Rely on clear class and method/function naming instead — if the names are good
   workaround, a subtle invariant) — not a restatement of *what* the code does.
 - If a class/function name isn't self-explanatory enough to skip a comment, the fix is a better name, not a
   comment.
+
+## 3. Treat each feature as standalone
+
+Unless explicitly told otherwise, treat each folder under `Assets/Features/<Name>/` as self-contained.
+Don't read, reference, or reuse code from other feature folders, and don't assume a dependency between
+features, when working on one of them.
+
+- Only cross into another feature's folder if the owner explicitly says there's a dependency on it (e.g.
+  "this reuses the Pooling system" or "wire this into Conjure").
+- This applies to research/exploration too — don't go searching other `Assets/Features/` folders for
+  patterns to copy unless asked.

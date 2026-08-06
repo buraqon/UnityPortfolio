@@ -1,0 +1,22 @@
+{
+    "name": "MicroBots",
+    "rootNamespace": "HippoLib.MicroBots",
+    "references": [
+        "Unity.Entities",
+        "Unity.Entities.Graphics",
+        "Unity.Burst",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Transforms",
+        "Unity.Entities.Hybrid"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

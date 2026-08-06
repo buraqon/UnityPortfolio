@@ -3,14 +3,36 @@
   <component name="ChangeListManager">
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_Conjure.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_Conjure.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_ConjureEnemy.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoNPC_ConjureEnemy.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoUser_Conjure.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Conjure/Demo/DemoUser_Conjure.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/Movement/Demo/DemoUser_Movement.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Movement/Demo/DemoUser_Movement.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/Network/Demo/DemoUser_Input.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/Network/Demo/DemoUser_Input.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PROJECT_RULES.md" beforeDir="false" afterPath="$PROJECT_DIR$/PROJECT_RULES.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="DpaMonitoringSettings">
+    <option name="firstShow" value="false" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/EB0095E242D3B168611467B4/JobEntityGenerator/Unity.Entities.SourceGen.JobEntityGenerator.JobEntityGenerator/RotationSpeedSystem__JobEntity_119327154415.g.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/Features/ECSDemo/CubeSpawnerSystem.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.entities@d66668920c3f/Unity.Entities.Hybrid/Baking/Baker.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.entities@d66668920c3f/Unity.Entities/ISystem.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.netcode.gameobjects@d43d28498f17/Runtime/Timing/NetworkTickSystem.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 7,
@@ -23,6 +45,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Attach to Unity Editor.Attach to Unity Editor.executor&quot;: &quot;Debug&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
@@ -83,6 +106,16 @@
       <workItem from="1785769439384" duration="3000" />
       <workItem from="1785770282002" duration="34000" />
       <workItem from="1785770332746" duration="4103000" />
+      <workItem from="1785857543666" duration="2171000" />
+      <workItem from="1785861180563" duration="2712000" />
+      <workItem from="1785864459300" duration="3875000" />
+      <workItem from="1785878461688" duration="1315000" />
+      <workItem from="1785930869520" duration="775000" />
+      <workItem from="1785940591774" duration="3129000" />
+      <workItem from="1785944463081" duration="539000" />
+      <workItem from="1786014769289" duration="5176000" />
+      <workItem from="1786024292106" duration="3664000" />
+      <workItem from="1786048777364" duration="334000" />
     </task>
     <servers />
   </component>
