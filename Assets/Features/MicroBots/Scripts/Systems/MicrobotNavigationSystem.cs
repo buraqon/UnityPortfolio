@@ -17,7 +17,7 @@ namespace HippoLib.MicroBots
 
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
             var dockPointsLookup = SystemAPI.GetComponentLookup<MicrobotDockPoints>(true);
-            var ikTargetLookup = SystemAPI.GetComponentLookup<MicrobotIkTarget>(true);
+            var ikTargetsLookup = SystemAPI.GetComponentLookup<MicrobotIkTargets>(true);
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
             var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
 
@@ -32,17 +32,19 @@ namespace HippoLib.MicroBots
                     continue;
 
                 var microbotEntity = dockCommand.ValueRO.MicrobotEntity;
-                if (!ikTargetLookup.HasComponent(microbotEntity) || !dockPointsLookup.HasComponent(dockCommand.ValueRO.DockEntity))
+                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockPointsLookup.HasComponent(dockCommand.ValueRO.DockEntity))
                     continue;
 
                 var dockPoints = dockPointsLookup[dockCommand.ValueRO.DockEntity];
                 var ikState = ikStateLookup[microbotEntity];
                 var stepState = stepStateLookup[microbotEntity];
-                var targetEntity = ikTargetLookup[microbotEntity].TargetEntity;
+                var ikTargets = ikTargetsLookup[microbotEntity];
 
-                var anchorIsB = ikState.AnchorIsSegmentB;
-                var anchorPos = ikState.AnchorWorldPosition;
-                var freePos = transforms[targetEntity].Position;
+                var anchorIsB = ikState.BaseIsSegmentB;
+                var anchorEntity = anchorIsB ? ikTargets.TargetBEntity : ikTargets.TargetAEntity;
+                var freeEntity = anchorIsB ? ikTargets.TargetAEntity : ikTargets.TargetBEntity;
+                var anchorPos = transforms[anchorEntity].Position;
+                var freePos = transforms[freeEntity].Position;
 
                 var posA = anchorIsB ? freePos : anchorPos;
                 var posB = anchorIsB ? anchorPos : freePos;

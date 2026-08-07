@@ -24,11 +24,13 @@ resuming the paused multi-bot scope (spawner, multiple bots, separation, climbin
   joints are **spherical (ball-and-socket)**, never single-axis hinges.
 - **No local autonomy**: a bot never decides anything for itself — behavior is always resolved from an
   externally-assigned destination, never a strategic choice made by the bot.
-- **Movement — IK foundation (built, being iterated on)**: one extremity is a fixed **anchor** (its world
-  position is cached and doesn't move on its own); root is solved every frame via planar 2-bone IK so
-  the other extremity reaches toward a **target** entity's current position. Which extremity is the
-  anchor is a **toggle** — either the `T` key, or automatically whenever a step lands (see below) — not
-  hardcoded to one segment.
+- **Movement — IK foundation (built, being iterated on)**: each extremity (A and B) has its **own**
+  persistent IK target entity (`MicrobotIkTargets.TargetAEntity`/`TargetBEntity` — see Decisions log for
+  why this replaced the earlier single shared/snapped target). Whichever extremity is currently the
+  **anchor** just has its target left untouched (frozen wherever it last was); root is solved every
+  frame via planar 2-bone IK from the anchor's target position toward the free extremity's target
+  position, which the step system actively moves. Which extremity is the anchor is a **toggle** —
+  either the `T` key, or automatically whenever a step lands (see below) — not hardcoded to one segment.
 - **Step movement only** — the earlier manual/step dual-mode toggle (`isManualMovement`) was removed
   once step mode was working; direct WASD-drag-the-target movement no longer exists. `W`/`S` trigger a
   step cycle — the target lerps toward `± StepSize` along a **rotatable heading** (not a fixed world
@@ -109,6 +111,27 @@ assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on poi
   rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
   `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
   immediately — no wasted frame at all, not just no wasted step.
+- **Open bug (being re-tested): rapid multi-toggle glitch (segments briefly overlapping) right as the
+  first point is reached, then it self-corrects.** The one-frame-settling-guard fix attempt (tracking
+  `LastAnchorIsSegmentB`) did not fix it and was reverted. Not yet retested against the target-splitting
+  change below, which removes a plausible root cause (see next entry) — status unknown until verified in
+  Play mode.
+- **Split the single shared/snapped IK target into two persistent per-extremity targets**
+  (`MicrobotIkTarget.TargetEntity` → `MicrobotIkTargets.TargetAEntity`/`TargetBEntity`) — this exact
+  split was tried once before, early on, and reverted back to a single snapped target; revisited now
+  because the old single-target design meant `MicrobotIkState.AnchorWorldPosition` (the anchor's
+  position, used by the dock/reached checks) was *recomputed via forward-kinematics*
+  (`ComputeTipWorldPosition`, based on segment rotation) rather than read directly from an authoritative
+  source — a genuinely different calculation than the free extremity's raw target-entity position, so
+  the two could disagree by a hair right at a tolerance boundary. With two persistent targets, an
+  extremity's position **is** its target entity's position, full stop, for both anchor and free roles —
+  one consistent source, no more FK-vs-target mismatch. This also let `MicrobotIkSystem` drop its whole
+  "needsAnchorRefresh / snap-target-on-toggle / continue-without-solving" branch entirely — the anchor's
+  target simply stays wherever it was, so there's no pop to guard against, and the real IK solve now
+  runs every frame unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`.
+  **Requires a scene change**: `MicrobotAuthoring.target` (one Transform) is now `targetA`/`targetB`
+  (two Transforms) — existing microbot prefabs/instances need a second target object assigned, or they
+  won't bake correctly.
 - **Turn-gate/heading-epsilon angles moved from hardcoded constants to authored fields** —
   `MicrobotAuthoring.turnGate`/`headingEpsilon` (Inspector-tunable) are plain degrees end-to-end, same as
   `turnSpeed` — no `Degrees`/`Radians` suffixes anywhere, and no conversion at bake time. They're stored

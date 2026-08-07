@@ -17,8 +17,8 @@ namespace HippoLib.MicroBots
             var toggleBase = inputState.ToggleBase;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
 
-            foreach (var (segments, ikTarget, ikState, transform) in SystemAPI
-                         .Query<RefRO<MicrobotSegments>, RefRO<MicrobotIkTarget>, RefRW<MicrobotIkState>, RefRW<LocalTransform>>()
+            foreach (var (segments, ikTargets, ikState, transform) in SystemAPI
+                         .Query<RefRO<MicrobotSegments>, RefRO<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<LocalTransform>>()
                          .WithAll<MicrobotTag>())
             {
                 if (toggleBase)
@@ -32,28 +32,11 @@ namespace HippoLib.MicroBots
                 var endEntity = baseIsB ? segments.ValueRO.SegmentAEntity : segments.ValueRO.SegmentBEntity;
                 var endLength = baseIsB ? segments.ValueRO.LengthA : segments.ValueRO.LengthB;
 
-                var isToggle = ikState.ValueRO.AnchorInitialized && ikState.ValueRO.AnchorIsSegmentB != baseIsB;
-                var needsAnchorRefresh = !ikState.ValueRO.AnchorInitialized || isToggle;
-                if (needsAnchorRefresh)
-                {
-                    var oldAnchorPos = ikState.ValueRO.AnchorWorldPosition;
-                    ikState.ValueRW.AnchorWorldPosition = ComputeTipWorldPosition(transforms, baseEntity, baseLength, transform.ValueRO);
-                    ikState.ValueRW.AnchorInitialized = true;
-                    ikState.ValueRW.AnchorIsSegmentB = baseIsB;
+                var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
+                var freeEntity = baseIsB ? ikTargets.ValueRO.TargetAEntity : ikTargets.ValueRO.TargetBEntity;
 
-                    if (isToggle)
-                    {
-                        var targetEntity = ikTarget.ValueRO.TargetEntity;
-                        var targetTransform = transforms[targetEntity];
-                        targetTransform.Position = oldAnchorPos;
-                        transforms[targetEntity] = targetTransform;
-                    }
-
-                    continue;
-                }
-
-                var anchorPos = ikState.ValueRO.AnchorWorldPosition;
-                var targetPos = transforms[ikTarget.ValueRO.TargetEntity].Position;
+                var anchorPos = transforms[anchorEntity].Position;
+                var targetPos = transforms[freeEntity].Position;
 
                 var toTargetHorizontal = targetPos - anchorPos;
                 toTargetHorizontal.y = 0f;
@@ -72,13 +55,6 @@ namespace HippoLib.MicroBots
                 SetSegmentRotation(transforms, baseEntity, LocalDirectionRotation(toAnchorLocal));
                 SetSegmentRotation(transforms, endEntity, LocalDirectionRotation(toTargetLocal));
             }
-        }
-
-        private static float3 ComputeTipWorldPosition(ComponentLookup<LocalTransform> transforms, Entity segmentEntity, float length, in LocalTransform rootTransform)
-        {
-            var segmentLocalRotation = transforms[segmentEntity].Rotation;
-            var localOffset = math.rotate(segmentLocalRotation, new float3(0f, 0f, 1f)) * length;
-            return rootTransform.Position + math.rotate(rootTransform.Rotation, localOffset);
         }
 
         private static float3 SolveElbowPlanar(float3 anchorPos, float3 targetPos, float3 forward, float l0, float l1)

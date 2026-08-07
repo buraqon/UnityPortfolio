@@ -10,7 +10,8 @@ namespace HippoLib.MicroBots
         public Transform segmentB;
         public float segmentBLength = 0.4f;
         public Vector3 destination;
-        public Transform target;
+        public Transform targetA;
+        public Transform targetB;
         public float stepSize = 0.3f;
         public float stepSpeed = 1f;
         public float stepHeight = 0.15f;
@@ -40,11 +41,14 @@ namespace HippoLib.MicroBots
                     HeadingEpsilon = authoring.headingEpsilon
                 });
 
-                DependsOn(authoring.target);
-                var targetEntity = GetEntity(authoring.target, TransformUsageFlags.Dynamic);
-                AddComponent(root, new MicrobotIkTarget
+                DependsOn(authoring.targetA);
+                DependsOn(authoring.targetB);
+                var targetAEntity = GetEntity(authoring.targetA, TransformUsageFlags.Dynamic);
+                var targetBEntity = GetEntity(authoring.targetB, TransformUsageFlags.Dynamic);
+                AddComponent(root, new MicrobotIkTargets
                 {
-                    TargetEntity = targetEntity
+                    TargetAEntity = targetAEntity,
+                    TargetBEntity = targetBEntity
                 });
 
                 DependsOn(authoring.segmentA);
