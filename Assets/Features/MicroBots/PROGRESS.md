@@ -111,6 +111,16 @@ assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on poi
   rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
   `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
   immediately — no wasted frame at all, not just no wasted step.
+- **Unified toggle-triggering through a single mechanism.** `MicrobotNavigationSystem` used to request a
+  toggle directly (writing `MicrobotInputState.ToggleBase` itself) when the free extremity had already
+  reached its point. Now it just sets `MicrobotStepState.ForceEnd = true` instead — `MicrobotStepMovementSystem`
+  checks that flag first each frame and, if set, reports `stepLanded = true` (the same path a normal
+  completed step already uses) without touching the free extremity's position at all, then clears the
+  flag. All toggling now flows through one place (`stepLanded` in `MicrobotStepMovementSystem`), whether
+  from a real completed step or a forced one. (Simply forcing `StepProgress` past 1 to fake a landing
+  was considered and rejected — the existing lerp math would've snapped the extremity to a stale
+  `currentStepTarget` computed from old step data, since it's already correctly positioned and shouldn't
+  move at all.)
 - **Fixed: dynamic step-size distance was measured from the wrong reference point.**
   `remainingDistance` (used to shrink the step near a dock point) was computed as
   `length(steerToPoint - steerFromPos)` — distance from the free extremity's *current* position to its

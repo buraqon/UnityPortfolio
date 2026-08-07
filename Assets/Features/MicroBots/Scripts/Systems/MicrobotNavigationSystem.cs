@@ -24,7 +24,6 @@ namespace HippoLib.MicroBots
             SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
             var moveInput = inputState.MoveInput;
             var hasCommand = false;
-            var toggleRequested = false;
 
             foreach (var dockCommand in SystemAPI.Query<RefRW<MicrobotDockCommand>>())
             {
@@ -81,7 +80,7 @@ namespace HippoLib.MicroBots
                 {
                     steerFromPos = anchorPos;
                     steerToPoint = anchorIsB ? targetForB : targetForA;
-                    toggleRequested = true;
+                    stepState.ForceEnd = true;
                 }
                 else
                 {
@@ -122,7 +121,7 @@ namespace HippoLib.MicroBots
             {
                 SystemAPI.SetSingleton(new MicrobotInputState
                 {
-                    ToggleBase = inputState.ToggleBase || toggleRequested,
+                    ToggleBase = inputState.ToggleBase,
                     MoveInput = moveInput
                 });
             }

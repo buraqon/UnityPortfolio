@@ -32,6 +32,15 @@ namespace HippoLib.MicroBots
 
                 stepState.ValueRW.HeadingAngle += math.radians(stepState.ValueRO.TurnSpeed) * inputState.MoveInput.z * deltaTime;
 
+                if (stepState.ValueRO.ForceEnd)
+                {
+                    stepState.ValueRW.ForceEnd = false;
+                    stepState.ValueRW.Initialized = false;
+                    stepState.ValueRW.StepProgress = 0f;
+                    stepLanded = true;
+                    continue;
+                }
+
                 if (!stepping && math.abs(inputState.MoveInput.y) > 0.0001f)
                 {
                     var direction = math.sign(inputState.MoveInput.y);
