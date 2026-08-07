@@ -14,6 +14,7 @@ namespace HippoLib.MicroBots
         public float stepSize = 0.3f;
         public float stepSpeed = 1f;
         public float stepHeight = 0.15f;
+        public float turnSpeed = 90f;
 
         private class Baker : Baker<MicrobotAuthoring>
         {
@@ -31,7 +32,8 @@ namespace HippoLib.MicroBots
                 {
                     StepSize = authoring.stepSize,
                     StepSpeed = authoring.stepSpeed,
-                    StepHeight = authoring.stepHeight
+                    StepHeight = authoring.stepHeight,
+                    TurnSpeed = authoring.turnSpeed
                 });
                 AddComponent(root, new MicrobotStepState());
 

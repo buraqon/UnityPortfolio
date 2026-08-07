@@ -7,5 +7,6 @@ namespace HippoLib.MicroBots
         public float StepSize;
         public float StepSpeed;
         public float StepHeight;
+        public float TurnSpeed;
     }
 }

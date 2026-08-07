@@ -31,15 +31,21 @@ spawner are explicitly paused — see "Paused scope" below.
   hardcoded to one segment.
 - **Step movement only** — the earlier manual/step dual-mode toggle (`isManualMovement`) was removed
   once step mode was working; direct WASD-drag-the-target movement no longer exists. `W`/`S` trigger a
-  step cycle — the target lerps toward `± StepSize` along a fixed world Z axis with a **computed**
-  `sin(t·π) * StepHeight` vertical lift layered on top (not an authored `AnimationCurve` — see
-  Decisions log), over a duration set by `StepSpeed`; landing (progress reaching 1) automatically
-  triggers the anchor toggle.
-- **`A`/`D` heading rotation was attempted and reverted** — added `HeadingAngle`/`TurnSpeed` so `A`/`D`
-  would rotate the step direction around Y instead of doing nothing. Right after this, the microbot's
-  root/segments stopped updating entirely (target kept moving, arm didn't) — reverted fully (including
-  the now-unused fields) to isolate the cause before deciding whether it was actually the heading change
-  or a coincidental/separate issue. Not yet re-attempted or root-caused.
+  step cycle — the target lerps toward `± StepSize` along a **rotatable heading** (not a fixed world
+  axis) with a **computed** `sin(t·π) * StepHeight` vertical lift layered on top (not an authored
+  `AnimationCurve` — see Decisions log), over a duration set by `StepSpeed`; landing (progress reaching
+  1) automatically triggers the anchor toggle. `A`/`D` continuously rotate `MicrobotStepState
+  .HeadingAngle` around Y (rate set by `TurnSpeed`) — each new step's direction is that heading's
+  forward vector rotated by the current angle, so turning changes where the *next* step goes rather
+  than spinning the currently-planted pose in place.
+- **Open question**: right after first adding this heading rotation, the microbot's root/segments
+  stopped updating entirely (target kept moving, arm didn't) — reverted fully to isolate the cause, then
+  re-applied at the owner's request without yet confirming whether the heading change was actually the
+  cause or a coincidental/separate issue. **Watch for this symptom again** (target moves, arm frozen) —
+  if it recurs, the leading theory is `MicrobotIkState.BaseIsSegmentB` toggling every frame instead of
+  only on real toggles, which would make `MicrobotIkSystem`'s per-bot loop hit its early `continue`
+  (anchor-refresh branch) every frame and never reach the actual IK solve. Check `BaseIsSegmentB` in the
+  Entities Inspector for flickering if it happens again.
 
 ## Paused scope (not deleted — resume after single-bot movement is satisfying)
 

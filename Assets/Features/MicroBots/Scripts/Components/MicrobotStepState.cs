@@ -9,5 +9,6 @@ namespace HippoLib.MicroBots
         public float3 StepStartPosition;
         public float3 StepTargetPosition;
         public float StepProgress;
+        public float HeadingAngle;
     }
 }

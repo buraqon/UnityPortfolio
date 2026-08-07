@@ -27,12 +27,16 @@ namespace HippoLib.MicroBots
                 var targetEntity = ikTarget.ValueRO.TargetEntity;
                 var stepping = stepState.ValueRO.Initialized && stepState.ValueRO.StepProgress < 1f;
 
+                stepState.ValueRW.HeadingAngle += math.radians(stepSettings.ValueRO.TurnSpeed) * inputState.MoveInput.z * deltaTime;
+
                 if (!stepping && math.abs(inputState.MoveInput.y) > 0.0001f)
                 {
                     var direction = math.sign(inputState.MoveInput.y);
                     var anchorPos = ikState.ValueRO.AnchorWorldPosition;
+                    var headingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
+                    var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
                     stepState.ValueRW.StepStartPosition = transforms[targetEntity].Position;
-                    stepState.ValueRW.StepTargetPosition = anchorPos + new float3(0f, 0f, direction * stepSettings.ValueRO.StepSize);
+                    stepState.ValueRW.StepTargetPosition = anchorPos + forwardDir * (direction * stepSettings.ValueRO.StepSize);
                     stepState.ValueRW.StepProgress = 0f;
                     stepState.ValueRW.Initialized = true;
                     stepping = true;
