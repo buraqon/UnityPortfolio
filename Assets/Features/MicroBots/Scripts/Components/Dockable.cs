@@ -3,7 +3,7 @@ using Unity.Mathematics;
 
 namespace HippoLib.MicroBots
 {
-    public struct MicrobotDockPoints : IComponentData
+    public struct Dockable : IComponentData
     {
         public float3 PointA;
         public float3 PointB;

@@ -17,7 +17,7 @@ namespace HippoLib.MicroBots
 
             var deltaTime = SystemAPI.Time.DeltaTime;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
-            var dockPointsLookup = SystemAPI.GetComponentLookup<MicrobotDockPoints>(true);
+            var dockableLookup = SystemAPI.GetComponentLookup<Dockable>(true);
             var ikTargetsLookup = SystemAPI.GetComponentLookup<MicrobotIkTargets>(true);
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
             var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
@@ -44,10 +44,10 @@ namespace HippoLib.MicroBots
 
                 var microbotEntity = dockCommand.ValueRO.MicrobotEntity;
                 var dockEntity = dockList[dockCommand.ValueRO.CurrentDockIndex].DockEntity;
-                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockPointsLookup.HasComponent(dockEntity))
+                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockableLookup.HasComponent(dockEntity))
                     continue;
 
-                var dockPoints = dockPointsLookup[dockEntity];
+                var dockPoints = dockableLookup[dockEntity];
                 var ikTargets = ikTargetsLookup[microbotEntity];
 
                 var posA = transforms[ikTargets.TargetAEntity].Position;

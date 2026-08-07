@@ -132,6 +132,22 @@ target simply stays put, so there's no pop to guard against, and the IK solve ru
 unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a scene change**:
 `MicrobotAuthoring.target` (one Transform) is now `targetA`/`targetB` (two Transforms).
 
+- **Unified "dockable" concept (`Dockable`) so bots can dock onto other bots, not just static Dock
+  prefabs** — the ECS answer to "an `IDockable` interface": `Dockable : IComponentData { float3 PointA;
+  float3 PointB; }` replaces `MicrobotDockPoints`. `DockAuthoring` bakes it once, statically, same as
+  before (Dock prefabs are *always* dockable). A new `MicrobotDockableStateSystem` (runs after
+  `MicrobotStepMovementSystem`) adds/removes `Dockable` on microbots dynamically, based on whether
+  they're idle (`!HasGoal && !stepping`) — live-updating its `PointA`/`PointB` to the bot's current
+  `MicrobotIkTargets` positions while idle, removing the component entirely the moment the bot starts
+  moving (via `EndSimulationEntityCommandBufferSystem`, since add/remove are structural changes).
+  `MicrobotNavigationSystem` now reads `Dockable` uniformly regardless of source — no branching on what
+  kind of entity a dock-list entry actually is. This makes "must be stationary to dock onto" an enforced
+  invariant (a moving bot simply isn't found by the query) rather than a caveat, and it's meant as the
+  first real building block of M2's "spatial-hash based extremity proximity queries" — a queryable set of
+  currently-available attachment points is exactly what that needs, whether or not a spatial hash sits on
+  top later. If a dock-list entry currently isn't `Dockable` (e.g. targeting a bot that's still walking
+  elsewhere), `MicrobotNavigationSystem` just waits — doesn't assign a goal until it becomes available.
+  **Not yet tested**: bot-to-bot docking (only tested against static `Dock` prefabs so far).
 - **Quick test: a list of docks with a rest pause between them**, to exercise the system against
   multiple targets in sequence rather than just one. `MicrobotDockCommand.DockEntity` (single) became
   `CurrentDockIndex` + a `DynamicBuffer<MicrobotDockListElement>` (added via

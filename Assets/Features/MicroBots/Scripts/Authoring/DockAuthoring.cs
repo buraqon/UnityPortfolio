@@ -17,7 +17,7 @@ namespace HippoLib.MicroBots
                 DependsOn(authoring.pointA);
                 DependsOn(authoring.pointB);
 
-                AddComponent(entity, new MicrobotDockPoints
+                AddComponent(entity, new Dockable
                 {
                     PointA = authoring.pointA.position,
                     PointB = authoring.pointB.position
