@@ -151,6 +151,17 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
   no longer needs `anchorIsB` at all (`TargetAEntity`/`TargetBEntity`'s positions directly), and
   `anchorIsB` is now only computed for the one narrow purpose of finding the free extremity's position
   for the nearer-point tie-break.
+- **Fixed: ordinary long-distance strides toward a distant/elevated dock would jump into the air.**
+  `targetHeight` was set to `GoalPoint.y` unconditionally for every goal-driven step, including the
+  far-away, full-stride ones — so the very first step toward an elevated dock (or just a dock at a
+  different height) tried to reach the *final* height in one hop instead of staying level while still
+  many steps away. Fix: `targetHeight` is now `GoalPoint.y` only when `isFinalApproach` is true;
+  otherwise it's hardcoded ground level (`0f`), not `anchorPos.y` — since the anchor itself can be
+  elevated (left over from a previous docking approach that climbed), "match the anchor's current
+  height" would carry a stale elevation forward into the next walk instead of returning to the ground.
+  Applied the same fix to plain manual/ad-hoc stepping (`!hasGoal`) for consistency — ordinary ground
+  walking should always be at `0`, not wherever the anchor happens to currently sit. Height only ever
+  leaves `0` during a final-approach step toward a genuinely elevated goal.
 - **Fixed: far-away goals would deadlock.** Suppressing the toggle whenever a goal was merely
   unsatisfied assumed the goal was always within one extremity's reach from a *stationary* anchor
   (bounded by `segmentALength + segmentBLength`) — fine for final docking alignment, but if `GoalPoint`

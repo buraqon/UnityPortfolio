@@ -83,15 +83,16 @@ namespace HippoLib.MicroBots
                             var anchorToGoal = stepState.ValueRO.GoalPoint - anchorPos;
                             anchorToGoal.y = 0f;
                             var remaining = math.length(anchorToGoal);
+                            var isFinalApproach = remaining <= stepState.ValueRO.StepSize;
                             stepDistance = math.min(stepState.ValueRO.StepSize, remaining);
-                            targetHeight = stepState.ValueRO.GoalPoint.y;
+                            targetHeight = isFinalApproach ? stepState.ValueRO.GoalPoint.y : 0f;
                             direction = 1f;
-                            stepState.ValueRW.IsFinalApproach = remaining <= stepState.ValueRO.StepSize;
+                            stepState.ValueRW.IsFinalApproach = isFinalApproach;
                         }
                         else
                         {
                             stepDistance = stepState.ValueRO.StepSize;
-                            targetHeight = anchorPos.y;
+                            targetHeight = 0f;
                             direction = math.sign(inputState.MoveInput.y);
                         }
 
