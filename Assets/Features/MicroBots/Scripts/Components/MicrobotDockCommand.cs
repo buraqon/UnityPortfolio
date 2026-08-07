@@ -7,8 +7,8 @@ namespace HippoLib.MicroBots
         public Entity MicrobotEntity;
         public Entity DockEntity;
         public float Tolerance;
-        public bool AssignmentDecided;
-        public bool SwapAssignment;
+        public bool PointAClaimed;
+        public bool PointBClaimed;
         public bool Docked;
     }
 }

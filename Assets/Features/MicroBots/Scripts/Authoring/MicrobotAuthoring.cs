@@ -25,10 +25,7 @@ namespace HippoLib.MicroBots
             {
                 var root = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<MicrobotTag>(root);
-                AddComponent(root, new MicrobotMovementTarget
-                {
-                    Destination = authoring.destination
-                });
+   
                 AddComponent(root, new MicrobotIkState());
 
                 AddComponent(root, new MicrobotStepState

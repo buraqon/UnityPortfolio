@@ -66,130 +66,109 @@ world-space points) and be considered arrived once each extremity occupies one o
 assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on point 1).
 
 - **Dock is a fully standalone prefab** (`DockAuthoring` + `MicrobotDockPoints`: two child marker
-  Transforms baked to two world-space `float3`s) — it has no knowledge of any microbot.
-- **The command is a third, standalone link**, not baked into either `MicrobotAuthoring` or
-  `DockAuthoring`: `MicrobotDockCommandAuthoring` sits on its own GameObject, references a microbot +
-  a dock by `GameObject` reference. **Its `MicrobotDockCommand` component lives on the linker's own
-  entity, not on the microbot's** — a Baker can only `AddComponent` on an entity it owns (its own
-  primary entity, or one it created), never on another authoring component's entity; the first attempt
-  tried adding it directly to the microbot's entity and hit a baking `InvalidOperationException`
-  ("Entity doesn't belong to the current authoring component"). `MicrobotDockCommand` instead holds both
-  `MicrobotEntity` and `DockEntity` references, and `MicrobotNavigationSystem` looks up the microbot's
-  components via `ComponentLookup` rather than querying them directly off the command entity.
-- **`MicrobotNavigationSystem`** (new, `[UpdateAfter(MicrobotInputSystem)] [UpdateBefore
-  (MicrobotStepMovementSystem)]`) drives the *existing* step/turn gait toward the dock instead of
-  replacing it: for each undocked `MicrobotDockCommand`, it resolves each extremity's real world
-  position from the referenced microbot's `MicrobotIkState` (anchor tip via `AnchorWorldPosition`, free
-  tip approximated as the IK target entity's position), decides once which extremity is assigned to
-  which dock point (whichever pairing has lower total distance, cached via
-  `AssignmentDecided`/`SwapAssignment`), then overwrites the shared `MicrobotInputState.MoveInput`
-  singleton each frame: turn toward the free extremity's assigned point until roughly facing it, then
-  step forward.
-- **Dynamic step size to avoid overshoot** — `MicrobotStepState` gained `HasStepSizeOverride`/
-  `StepSizeOverride`; `MicrobotNavigationSystem` writes `min(nominal StepSize, remaining distance to the
-  free extremity's assigned point)` every frame while actively steering, and
-  `MicrobotStepMovementSystem`'s step-start block uses that override (if set) instead of the nominal
-  `StepSize`, consuming/clearing it once the step starts. Far from the dock this equals the normal fixed
-  step size (no behavior change); close to it, steps shrink to exactly the remaining distance instead of
-  overshooting past the point. This is also what makes docking work when the two dock points aren't a
-  "natural" distance apart for the bot's stride — each extremity's *final* step can be sized to land
-  exactly where needed, rather than being limited to fixed-size hops. Manual WASD stepping is unaffected
-  (override is only ever set by navigation). Not yet tested in Play mode.
-- **`MicrobotStepSettings` and `MicrobotStepState` merged into one component** (kept the `StepState`
-  name) — every system that touched either one already queried/looked-up both together on the same
-  entity every time (`MicrobotStepMovementSystem`, `MicrobotNavigationSystem`, `MicrobotAuthoring`'s
-  Baker); the split wasn't earning its keep. The authored fields (`StepSize`, `StepSpeed`, `StepHeight`,
-  `TurnSpeed`) and the runtime fields are grouped with a one-line comment separating them, but live in
-  the same struct now. `MicrobotStepSettings.cs` was deleted.
-- **Don't waste a gait cycle re-stepping an already-satisfied extremity** — the gait always alternates
-  (every landed step auto-toggles anchor/free), so once the currently-free extremity reaches its own
-  assigned point, its *next* turn would otherwise still fire a (harmless but wasted) near-zero step
-  instead of letting the still-unsatisfied extremity move. `MicrobotNavigationSystem` now checks
-  `freeReached` (is the currently-free extremity already within tolerance of its own point) each frame:
-  if so, it skips the forward step entirely, steers heading toward the *anchor's* target instead (since
-  that's who needs to move next), and force-requests a toggle via the shared `ToggleBase` singleton
-  rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
-  `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
-  immediately — no wasted frame at all, not just no wasted step.
-- **Docking now accounts for height, without any ground detection.** Previously steps were flat-only —
-  Y always inherited the anchor's current height, so a dock point above/below ground could never
-  actually be reached (the reached-check is full 3D distance, but the step system could only close the
-  horizontal gap). Added a height-override mechanism mirroring the existing step-size override:
-  `MicrobotStepState.HasStepHeightOverride`/`StepHeightOverride` (written by `MicrobotNavigationSystem`
-  every frame, set to `steerToPoint.y` — the dock point's actual, already-known height, no raycasting
-  needed) and `StepTargetHeight` (captured once at step-start, like `StepSignedDistance`, so it stays
-  fixed for that step's duration). `MicrobotStepMovementSystem`'s advance block now overwrites
-  `currentStepTarget.y` with `StepTargetHeight` instead of always inheriting the anchor's live height;
-  the cosmetic `sin(t·π)*StepHeight` arc still layers on top. Manual WASD steps are unaffected (the
-  override is only ever set by navigation, so they keep falling back to the anchor's height). No change
-  needed to the reached-check itself — once the step system can actually close the vertical gap, the
-  existing full-3D distance check naturally detects arrival. This is scoped specifically to docking, not
-  general uneven-ground walking — that remains parked pending the `com.unity.physics` rendering issue.
-  **Gated on the other extremity already being docked**: the height override is only written when
-  `anchorReached` (the currently-stationary extremity has already fully reached its own point) is true —
-  so the bot first plants one extremity precisely (horizontally only, flat height) before the other is
-  ever allowed to start climbing/descending toward its own (possibly elevated) point. Before that, height
-  stays flat exactly as it did before this feature existed.
-- **Unified toggle-triggering through a single mechanism.** `MicrobotNavigationSystem` used to request a
-  toggle directly (writing `MicrobotInputState.ToggleBase` itself) when the free extremity had already
-  reached its point. Now it just sets `MicrobotStepState.ForceEnd = true` instead — `MicrobotStepMovementSystem`
-  checks that flag first each frame and, if set, reports `stepLanded = true` (the same path a normal
-  completed step already uses) without touching the free extremity's position at all, then clears the
-  flag. All toggling now flows through one place (`stepLanded` in `MicrobotStepMovementSystem`), whether
-  from a real completed step or a forced one. (Simply forcing `StepProgress` past 1 to fake a landing
-  was considered and rejected — the existing lerp math would've snapped the extremity to a stale
-  `currentStepTarget` computed from old step data, since it's already correctly positioned and shouldn't
-  move at all.)
-- **Fixed: dynamic step-size distance was measured from the wrong reference point.**
-  `remainingDistance` (used to shrink the step near a dock point) was computed as
-  `length(steerToPoint - steerFromPos)` — distance from the free extremity's *current* position to its
-  target. But the step itself gets applied as `anchorPos + forwardDir * distance` — a radius from the
-  *anchor*, not from the free extremity's current position. Those only agree when the free extremity
-  happens to be sitting exactly on the anchor→target line; otherwise the step consistently over/undershot
-  by the anchor↔free offset, which is exactly what made tightening `Tolerance` misbehave. Fix:
-  `remainingDistance` is now `length(steerToPoint - anchorPos)` — measured the same way the step itself
-  is measured. The heading/turn calculation (`toGoal`, still based on `steerFromPos`) is unchanged.
-- **Fixed: heading changes only applied once per step landing instead of continuously mid-step.**
-  `HeadingAngle` was already updating every frame unconditionally (even mid-step), but
-  `StepTargetPosition` was computed once, at step-start, and never revisited — so a step's direction was
-  locked in the instant it began, and any turning that happened while it was still in flight only showed
-  up at the *next* step's start. This made turning look like it happened in discrete bursts timed to
-  step landings rather than smoothly. Fix: `MicrobotStepState.StepTargetPosition` (a fixed point) became
-  `StepSignedDistance` (a fixed scalar — direction × distance, decided once at step-start); the actual
-  target position is now recomputed every frame *during* the step from the anchor's current position and
-  the *live* `HeadingAngle`, so the free extremity's step continuously curves toward wherever the bot is
-  currently turning, converging exactly at landing instead of snapping.
-- **Open bug (being re-tested): rapid multi-toggle glitch (segments briefly overlapping) right as the
-  first point is reached, then it self-corrects.** The one-frame-settling-guard fix attempt (tracking
-  `LastAnchorIsSegmentB`) did not fix it and was reverted. Not yet retested against the target-splitting
-  change below, which removes a plausible root cause (see next entry) — status unknown until verified in
-  Play mode.
-- **Split the single shared/snapped IK target into two persistent per-extremity targets**
-  (`MicrobotIkTarget.TargetEntity` → `MicrobotIkTargets.TargetAEntity`/`TargetBEntity`) — this exact
-  split was tried once before, early on, and reverted back to a single snapped target; revisited now
-  because the old single-target design meant `MicrobotIkState.AnchorWorldPosition` (the anchor's
-  position, used by the dock/reached checks) was *recomputed via forward-kinematics*
-  (`ComputeTipWorldPosition`, based on segment rotation) rather than read directly from an authoritative
-  source — a genuinely different calculation than the free extremity's raw target-entity position, so
-  the two could disagree by a hair right at a tolerance boundary. With two persistent targets, an
-  extremity's position **is** its target entity's position, full stop, for both anchor and free roles —
-  one consistent source, no more FK-vs-target mismatch. This also let `MicrobotIkSystem` drop its whole
-  "needsAnchorRefresh / snap-target-on-toggle / continue-without-solving" branch entirely — the anchor's
-  target simply stays wherever it was, so there's no pop to guard against, and the real IK solve now
-  runs every frame unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`.
-  **Requires a scene change**: `MicrobotAuthoring.target` (one Transform) is now `targetA`/`targetB`
-  (two Transforms) — existing microbot prefabs/instances need a second target object assigned, or they
-  won't bake correctly.
-- **Turn-gate/heading-epsilon angles moved from hardcoded constants to authored fields** —
-  `MicrobotAuthoring.turnGate`/`headingEpsilon` (Inspector-tunable) are plain degrees end-to-end, same as
-  `turnSpeed` — no `Degrees`/`Radians` suffixes anywhere, and no conversion at bake time. They're stored
-  in degrees on `MicrobotStepState.TurnGate`/`HeadingEpsilon`, and `MicrobotNavigationSystem` converts to
-  radians with `math.radians(...)` only at the point of use, matching how `TurnSpeed` was already
-  handled in `MicrobotStepMovementSystem`.
-- **Known limitation, deliberately not solved yet**: `MicrobotInputState` is still one shared singleton
-  across all bots (pre-existing issue, not introduced here) — this only behaves correctly with exactly
-  one commanded bot. Multi-bot commanding needs per-bot input, which is out of scope until M1.5's
-  spawner work makes it unavoidable.
+  Transforms baked to two world-space `float3`s) — no knowledge of any microbot.
+- **The command is a third, standalone link** (`MicrobotDockCommandAuthoring`, its own GameObject,
+  references a microbot + a dock by `GameObject`) — not baked into either `MicrobotAuthoring` or
+  `DockAuthoring`. Its `MicrobotDockCommand` component lives on the *linker's* own entity (a Baker can
+  only `AddComponent` on an entity it owns), holding `MicrobotEntity`/`DockEntity` references that
+  `MicrobotNavigationSystem` resolves via `ComponentLookup`.
+
+**Current architecture — unified goal-seeking primitive** (after several iterations, see below):
+`MicrobotStepState` carries an optional active **goal** (`HasGoal`/`GoalPoint`/`GoalTolerance`) for
+whichever extremity is currently free. `MicrobotStepMovementSystem` is the single authority for all
+stepping — turning, dynamic step-sizing, height-targeting, and landing/arrival detection — regardless of
+whether a goal is driving it or not:
+- **No goal** (plain WASD): heading comes from `MoveInput.z`, step trigger from `MoveInput.y`, step size
+  is the nominal `StepSize`, height always inherits the anchor's current height (flat) — i.e. exactly the
+  original manual-walking behavior.
+- **Active goal** (docking): heading turns toward `GoalPoint` (gated by `HeadingEpsilon`/`TurnGate`,
+  same as before), step size is `min(StepSize, horizontal distance from anchor to GoalPoint)` (dynamic,
+  avoids overshoot — measured from the anchor, matching how the step itself is actually applied, not
+  from the free extremity's current position), and step height targets `GoalPoint.y` directly (no
+  ground/raycast needed, since it's a known point).
+- **Arrival is checked before *and* after each step**: if the free extremity is already within
+  `GoalTolerance` before moving, it hands off immediately with no wasted step; if a step lands within
+  tolerance, the goal clears and control hands off; if a step lands *short*, the goal stays active and
+  **the normal per-landing toggle is suppressed** — the same extremity keeps taking steps toward the
+  same goal (re-aimed/re-sized fresh each time) instead of alternating away mid-approach. Only when a
+  goal is fully satisfied does control pass to the other extremity.
+- **`MicrobotNavigationSystem` shrank to one job**: whenever the currently-free extremity has no active
+  goal (`!stepState.HasGoal`) and the command isn't fully docked, give it one — its paired dock point
+  (pairing decided once via `AssignmentDecided`/`SwapAssignment`, whichever pairing minimizes total
+  distance). Since only the free extremity is ever assigned a goal, **sequencing is automatic**: the
+  second point is never touched until the first extremity's goal clears and control has passed to the
+  other one — matching the docking geometry assumption (the two points are close enough together that
+  the second extremity can reach its point without the first ever needing to move again).
+- **Bonus**: goal-driven bots no longer route through the shared `MicrobotInputState` singleton at all
+  (they carry `HasGoal`/`GoalPoint` on their own `MicrobotStepState`) — this incidentally fixes the
+  "one shared `MoveInput` for all bots" limitation *for docking*, though manual WASD control still
+  shares it (fine for now, single-bot testing).
+
+**How it got here** (compressed — see git history for full blow-by-blow): started as `MicrobotNavigationSystem`
+overwriting the shared `MoveInput` singleton every frame plus a set of override flags on `MicrobotStepState`
+(`HasStepSizeOverride`, `HasStepHeightOverride`, `ForceEnd`) bolted onto the pre-existing manual-walking
+gait. That worked but kept accumulating special cases (dynamic sizing, height, skip-a-wasted-step,
+height-gated-on-counterpart-anchored, unify-toggle-triggering) each as a separate mechanism layered on
+top of the manual-gait code. Recognized these were all facets of one concept — "an extremity seeking a
+goal point, turn as needed, dynamically sized, hands off on arrival" — and refactored into the single
+`HasGoal` primitive above, which subsumed *all* of the override flags at once. Also fixed two real bugs
+found along the way, now folded into the current design rather than listed separately: (1) dynamic
+step-size distance must be measured from the anchor, not the free extremity's current position, since
+that's how the step itself gets applied; (2) heading changes were only being applied once per step
+landing instead of continuously mid-step (`StepTargetPosition`, a fixed point computed once at step-start,
+became `StepSignedDistance`, a fixed scalar re-applied against the *live* heading every frame during the
+step, so a step visibly curves toward wherever the bot turns mid-flight).
+
+**Also split the single shared/snapped IK target into two persistent per-extremity targets**
+(`MicrobotIkTarget.TargetEntity` → `MicrobotIkTargets.TargetAEntity`/`TargetBEntity`) — this exact split
+was tried once before, early on, and reverted back to a single snapped target; revisited because the old
+single-target design meant the anchor's position was *recomputed via forward-kinematics*
+(`ComputeTipWorldPosition`, from segment rotation) rather than read directly — a genuinely different
+calculation than the free extremity's raw target-entity position, so the two could disagree by a hair
+right at a tolerance boundary. With two persistent targets, an extremity's position **is** its target
+entity's position, full stop, for both anchor and free roles. This also let `MicrobotIkSystem` drop its
+whole "needsAnchorRefresh / snap-target-on-toggle / continue-without-solving" branch — the anchor's
+target simply stays put, so there's no pop to guard against, and the IK solve runs every frame
+unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a scene change**:
+`MicrobotAuthoring.target` (one Transform) is now `targetA`/`targetB` (two Transforms).
+
+- **Dropped the fixed A/B↔point pairing decision entirely — it doesn't matter which extremity lands on
+  which dock point**, only that each point ends up occupied by *someone*. Removed
+  `AssignmentDecided`/`SwapAssignment`/the upfront `costDirect`/`costSwap` comparison; `MicrobotDockCommand`
+  now just tracks `PointAClaimed`/`PointBClaimed`, updated live each frame by checking whether *either*
+  extremity's current position is within tolerance of that point. When a new goal needs assigning, the
+  free extremity gets whichever unclaimed point is nearer to it (or, if both are still open, whichever
+  it's closer to). This also cleaned up `MicrobotNavigationSystem`'s role-awareness: reading `posA`/`posB`
+  no longer needs `anchorIsB` at all (`TargetAEntity`/`TargetBEntity`'s positions directly), and
+  `anchorIsB` is now only computed for the one narrow purpose of finding the free extremity's position
+  for the nearer-point tie-break.
+- **Fixed: far-away goals would deadlock.** Suppressing the toggle whenever a goal was merely
+  unsatisfied assumed the goal was always within one extremity's reach from a *stationary* anchor
+  (bounded by `segmentALength + segmentBLength`) — fine for final docking alignment, but if `GoalPoint`
+  is farther than that, every step gets physically clamped by the IK solve to the same max-reach
+  boundary, so `distance(newPosition, GoalPoint)` never improves and the goal never clears — the anchor
+  never gets a turn to advance either, so the whole body gets stuck short of a distant goal. Fixed with
+  an **implicit path**, no waypoint list needed: `MicrobotStepState.IsFinalApproach` records, at
+  step-start, whether this step's distance was clamped by `StepSize` (still far — ordinary full-stride
+  step) or by the goal's actual remaining distance (`remaining <= StepSize` — close enough to possibly
+  finish this step). On landing, only suppress the toggle when `IsFinalApproach` was true; otherwise
+  toggle normally, same as ordinary walking. Repeating full-stride steps with normal alternation
+  naturally produces a path of steps toward a distant goal — generated one hop at a time instead of
+  precomputed — and only the last leg, once within `StepSize`, switches to the no-toggle precise
+  convergence behavior. Needed no new capability in `MicrobotNavigationSystem` at all.
+- **Open bug, not yet retested against the current architecture**: a rapid multi-toggle glitch (segments
+  briefly overlapping) right as the first point was reached, then self-correcting. Seen before the
+  target-splitting and goal-unification refactors — both plausibly related (the old FK-vs-target mismatch,
+  and the old per-landing-toggle-always-fires behavior that the new suppress-while-goal-active logic
+  replaces). Status unknown until re-verified in Play mode.
+- **Turn-gate/heading-epsilon angles are authored fields, plain degrees end-to-end** —
+  `MicrobotAuthoring.turnGate`/`headingEpsilon`, no `Degrees`/`Radians` suffixes anywhere, converted to
+  radians only at the point of use (`math.radians(...)`), matching how `TurnSpeed` already worked.
+- **Known limitation, deliberately not solved yet**: manual WASD control still shares one
+  `MicrobotInputState` singleton across all bots — fine for single-bot testing, needs per-bot input once
+  M1.5's spawner makes multi-bot manual control relevant (goal-driven/docking bots are unaffected, see
+  above).
+- **Next up**: unification just landed, not yet tested in Play mode end-to-end.
 
 ## Paused scope (not deleted — resume after single-bot movement is satisfying)
 

@@ -21,10 +21,6 @@ namespace HippoLib.MicroBots
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
             var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
 
-            SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
-            var moveInput = inputState.MoveInput;
-            var hasCommand = false;
-
             foreach (var dockCommand in SystemAPI.Query<RefRW<MicrobotDockCommand>>())
             {
                 if (dockCommand.ValueRO.Docked)
@@ -35,103 +31,52 @@ namespace HippoLib.MicroBots
                     continue;
 
                 var dockPoints = dockPointsLookup[dockCommand.ValueRO.DockEntity];
-                var ikState = ikStateLookup[microbotEntity];
-                var stepState = stepStateLookup[microbotEntity];
                 var ikTargets = ikTargetsLookup[microbotEntity];
 
-                var anchorIsB = ikState.BaseIsSegmentB;
-                var anchorEntity = anchorIsB ? ikTargets.TargetBEntity : ikTargets.TargetAEntity;
-                var freeEntity = anchorIsB ? ikTargets.TargetAEntity : ikTargets.TargetBEntity;
-                var anchorPos = transforms[anchorEntity].Position;
-                var freePos = transforms[freeEntity].Position;
-
-                var posA = anchorIsB ? freePos : anchorPos;
-                var posB = anchorIsB ? anchorPos : freePos;
-
-                if (!dockCommand.ValueRO.AssignmentDecided)
-                {
-                    var costDirect = math.distance(posA, dockPoints.PointA) + math.distance(posB, dockPoints.PointB);
-                    var costSwap = math.distance(posA, dockPoints.PointB) + math.distance(posB, dockPoints.PointA);
-                    dockCommand.ValueRW.SwapAssignment = costSwap < costDirect;
-                    dockCommand.ValueRW.AssignmentDecided = true;
-                }
-
-                var swap = dockCommand.ValueRO.SwapAssignment;
-                var targetForA = swap ? dockPoints.PointB : dockPoints.PointA;
-                var targetForB = swap ? dockPoints.PointA : dockPoints.PointB;
-
+                var posA = transforms[ikTargets.TargetAEntity].Position;
+                var posB = transforms[ikTargets.TargetBEntity].Position;
                 var tolerance = dockCommand.ValueRO.Tolerance;
-                var aReached = math.distance(posA, targetForA) <= tolerance;
-                var bReached = math.distance(posB, targetForB) <= tolerance;
 
-                if (aReached && bReached)
+                var pointAClaimed = dockCommand.ValueRO.PointAClaimed
+                    || math.distance(posA, dockPoints.PointA) <= tolerance
+                    || math.distance(posB, dockPoints.PointA) <= tolerance;
+                var pointBClaimed = dockCommand.ValueRO.PointBClaimed
+                    || math.distance(posA, dockPoints.PointB) <= tolerance
+                    || math.distance(posB, dockPoints.PointB) <= tolerance;
+
+                dockCommand.ValueRW.PointAClaimed = pointAClaimed;
+                dockCommand.ValueRW.PointBClaimed = pointBClaimed;
+
+                if (pointAClaimed && pointBClaimed)
                 {
                     dockCommand.ValueRW.Docked = true;
                     continue;
                 }
 
-                hasCommand = true;
+                var stepState = stepStateLookup[microbotEntity];
+                if (stepState.HasGoal)
+                    continue;
 
-                var freeReached = anchorIsB ? aReached : bReached;
-                var anchorReached = anchorIsB ? bReached : aReached;
+                var ikState = ikStateLookup[microbotEntity];
+                var freeEntity = ikState.BaseIsSegmentB ? ikTargets.TargetAEntity : ikTargets.TargetBEntity;
+                var freePos = transforms[freeEntity].Position;
 
-                float3 steerFromPos;
-                float3 steerToPoint;
-                if (freeReached)
+                float3 goal;
+                if (!pointAClaimed && !pointBClaimed)
                 {
-                    steerFromPos = anchorPos;
-                    steerToPoint = anchorIsB ? targetForB : targetForA;
-                    stepState.ForceEnd = true;
+                    goal = math.distance(freePos, dockPoints.PointA) <= math.distance(freePos, dockPoints.PointB)
+                        ? dockPoints.PointA
+                        : dockPoints.PointB;
                 }
                 else
                 {
-                    steerFromPos = freePos;
-                    steerToPoint = anchorIsB ? targetForA : targetForB;
+                    goal = pointAClaimed ? dockPoints.PointB : dockPoints.PointA;
                 }
 
-                var toGoal = steerToPoint - steerFromPos;
-                toGoal.y = 0f;
-
-                var anchorToGoal = steerToPoint - anchorPos;
-                anchorToGoal.y = 0f;
-                var remainingDistance = math.length(anchorToGoal);
-
-                var turnInput = 0f;
-                var forwardInput = 0f;
-
-                if (math.lengthsq(toGoal) > 0.0001f)
-                {
-                    var desiredHeading = math.atan2(toGoal.x, toGoal.z);
-                    var rawDiff = desiredHeading - stepState.HeadingAngle;
-                    var angleDiff = math.atan2(math.sin(rawDiff), math.cos(rawDiff));
-
-                    turnInput = math.abs(angleDiff) > math.radians(stepState.HeadingEpsilon) ? math.sign(angleDiff) : 0f;
-                    forwardInput = !freeReached && math.abs(angleDiff) < math.radians(stepState.TurnGate) ? 1f : 0f;
-                }
-
-                moveInput.y = forwardInput;
-                moveInput.z = turnInput;
-
-                var nominalStepSize = stepState.StepSize;
-                stepState.HasStepSizeOverride = true;
-                stepState.StepSizeOverride = math.min(nominalStepSize, remainingDistance);
-
-                if (anchorReached)
-                {
-                    stepState.HasStepHeightOverride = true;
-                    stepState.StepHeightOverride = steerToPoint.y;
-                }
-
+                stepState.HasGoal = true;
+                stepState.GoalPoint = goal;
+                stepState.GoalTolerance = tolerance;
                 stepStateLookup[microbotEntity] = stepState;
-            }
-
-            if (hasCommand)
-            {
-                SystemAPI.SetSingleton(new MicrobotInputState
-                {
-                    ToggleBase = inputState.ToggleBase,
-                    MoveInput = moveInput
-                });
             }
         }
     }
