@@ -186,6 +186,44 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
   `Instantiate`/`SetComponentData` on the newly-spawned (different-archetype) entities didn't trigger
   this. Fixed by collecting spawner entities into a `NativeList` during the loop and destroying them in
   a separate pass after it finishes.
+- **Spawner can now automatically dock every bot it spawns onto the same dock** —
+  `MicrobotSpawner`/`MicrobotSpawnerAuthoring` gained an optional `dock` reference (plus
+  `tolerance`/`restTime`); if set, `MicrobotSpawnSystem` creates a `MicrobotDockCommand` linker entity
+  (with a one-entry `MicrobotDockListElement` buffer pointing at that dock) for each bot right after
+  spawning it. **Expected behavior worth knowing going in**: since each bot's claim-tracking
+  (`PointAClaimed`/`PointBClaimed`) is independent per `MicrobotDockCommand`, nothing coordinates between
+  different bots targeting the *same* dock — they'll all genuinely converge on the identical two points
+  and overlap, not spread out or queue. No reservation/uniqueness system exists yet (that's the harder
+  N-way-junction problem flagged earlier, not solved here).
+  **Bug found (unconfirmed, being retested)**: no `MicrobotDockCommand` linker entities were showing up
+  at all for spawned bots, despite the spawner's `dock` field being correctly assigned. Suspect cause:
+  `state.EntityManager.CreateEntity(typeof(MicrobotDockCommand))` used `typeof()`, which goes through
+  managed .NET reflection — inside `[BurstCompile]` code that's the kind of thing that can misbehave
+  silently rather than throw a loud, visible error (unlike the Burst aborts seen elsewhere in this log).
+  Changed to `ComponentType.ReadWrite<MicrobotDockCommand>()`, the canonical Burst-safe way to construct
+  a `ComponentType` (resolved via generics at compile time, not runtime type lookup). Not yet confirmed
+  this was the actual root cause.
+  **Real root cause found**: the `typeof()` theory was a red herring — `AddBuffer` (also a structural
+  change) was being called while still inside the `foreach` over the `MicrobotSpawner` query, the exact
+  same class of bug as the earlier `DestroyEntity` crash, just not fully fixed there (only the destroy
+  call had been pulled out of the loop, not the rest of the structural changes). Fixed properly this
+  time by fully separating concerns: one pass over the query just *reads* spawner data into a
+  `NativeList<MicrobotSpawner>` (plus the entities to remove), then a second pass, entirely outside the
+  query iteration, performs every structural change (`Instantiate`, `SetComponentData`, `CreateEntity`,
+  `AddBuffer`, `DestroyEntity`).
+- **Moved auto-docking out of the spawner entirely, into its own system.** `MicrobotSpawner` is back to
+  pure spawning (no `DockEntity`/`DockTolerance`/`DockRestTime`) — cleaner separation of concerns, and
+  sidesteps a real lifecycle problem: the spawner entity is destroyed once it's done spawning, so it
+  couldn't have stayed around as a persistent source of "which dock to use" anyway. New pieces:
+  `MicrobotAutoDockConfig` (a singleton — `DockEntity`/`Tolerance`/`RestTime`, baked once from a
+  standalone `MicrobotAutoDockAuthoring` GameObject, persists for the whole session), `MicrobotDockAssigned`
+  (an empty tag marking a bot as already handled), and `MicrobotAutoDockSystem`
+  (`[UpdateAfter(MicrobotSpawnSystem)]`) — each frame, finds every microbot with `MicrobotTag` but
+  *without* `MicrobotDockAssigned`, creates a `MicrobotDockCommand` linker for it targeting the
+  configured dock, and tags it so it isn't reprocessed. Runs continuously rather than as a one-shot, so
+  it naturally picks up newly-spawned bots whenever they appear, with no explicit dependency on spawn
+  timing. Same two-pass structural-change pattern as the spawner (collect entities during read-only
+  iteration, do all `CreateEntity`/`AddBuffer`/`AddComponent` calls after).
 - **Unified "dockable" concept (`Dockable`) so bots can dock onto other bots, not just static Dock
   prefabs** — the ECS answer to "an `IDockable` interface": `Dockable : IComponentData { float3 PointA;
   float3 PointB; }` replaces `MicrobotDockPoints`. `DockAuthoring` bakes it once, statically, same as

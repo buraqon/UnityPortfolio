@@ -13,28 +13,34 @@ namespace HippoLib.MicroBots
         public void OnUpdate(ref SystemState state)
         {
             var random = Random.CreateFromIndex((uint)SystemAPI.Time.ElapsedTime + 1);
+
+            var spawnersToProcess = new NativeList<MicrobotSpawner>(Allocator.Temp);
             var spawnersToRemove = new NativeList<Entity>(Allocator.Temp);
 
             foreach (var (spawner, entity) in SystemAPI.Query<RefRO<MicrobotSpawner>>().WithEntityAccess())
             {
-                for (var i = 0; i < spawner.ValueRO.SpawnCount; i++)
+                spawnersToProcess.Add(spawner.ValueRO);
+                spawnersToRemove.Add(entity);
+            }
+
+            foreach (var spawner in spawnersToProcess)
+            {
+                for (var i = 0; i < spawner.SpawnCount; i++)
                 {
-                    var instance = state.EntityManager.Instantiate(spawner.ValueRO.Prefab);
+                    var instance = state.EntityManager.Instantiate(spawner.Prefab);
 
                     var offset = new float3(
-                        random.NextFloat(-0.5f, 0.5f) * spawner.ValueRO.SpawnAreaSize.x,
-                        spawner.ValueRO.SpawnHeight,
-                        random.NextFloat(-0.5f, 0.5f) * spawner.ValueRO.SpawnAreaSize.z);
+                        random.NextFloat(-0.5f, 0.5f) * spawner.SpawnAreaSize.x,
+                        spawner.SpawnHeight,
+                        random.NextFloat(-0.5f, 0.5f) * spawner.SpawnAreaSize.z);
 
-                    var spawnPosition = spawner.ValueRO.SpawnCenter + offset;
+                    var spawnPosition = spawner.SpawnCenter + offset;
                     state.EntityManager.SetComponentData(instance, LocalTransform.FromPosition(spawnPosition));
 
                     var ikTargets = state.EntityManager.GetComponentData<MicrobotIkTargets>(instance);
                     state.EntityManager.SetComponentData(ikTargets.TargetAEntity, LocalTransform.FromPosition(spawnPosition + ikTargets.TargetAOffset));
                     state.EntityManager.SetComponentData(ikTargets.TargetBEntity, LocalTransform.FromPosition(spawnPosition + ikTargets.TargetBOffset));
                 }
-
-                spawnersToRemove.Add(entity);
             }
 
             foreach (var spawnerEntity in spawnersToRemove)
@@ -42,6 +48,7 @@ namespace HippoLib.MicroBots
                 state.EntityManager.DestroyEntity(spawnerEntity);
             }
 
+            spawnersToProcess.Dispose();
             spawnersToRemove.Dispose();
         }
     }
