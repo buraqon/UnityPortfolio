@@ -35,14 +35,11 @@ namespace HippoLib.MicroBots
                 if (!stepping && math.abs(inputState.MoveInput.y) > 0.0001f)
                 {
                     var direction = math.sign(inputState.MoveInput.y);
-                    var anchorPos = transforms[anchorEntity].Position;
-                    var headingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
-                    var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
                     var stepDistance = stepState.ValueRO.HasStepSizeOverride
                         ? stepState.ValueRO.StepSizeOverride
                         : stepState.ValueRO.StepSize;
                     stepState.ValueRW.StepStartPosition = transforms[freeEntity].Position;
-                    stepState.ValueRW.StepTargetPosition = anchorPos + forwardDir * (direction * stepDistance);
+                    stepState.ValueRW.StepSignedDistance = direction * stepDistance;
                     stepState.ValueRW.StepProgress = 0f;
                     stepState.ValueRW.Initialized = true;
                     stepState.ValueRW.HasStepSizeOverride = false;
@@ -57,7 +54,12 @@ namespace HippoLib.MicroBots
                 stepState.ValueRW.StepProgress = newProgress;
                 var t = math.saturate(newProgress);
 
-                var newPosition = math.lerp(stepState.ValueRO.StepStartPosition, stepState.ValueRO.StepTargetPosition, t);
+                var headingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
+                var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
+                var anchorPos = transforms[anchorEntity].Position;
+                var currentStepTarget = anchorPos + forwardDir * stepState.ValueRO.StepSignedDistance;
+
+                var newPosition = math.lerp(stepState.ValueRO.StepStartPosition, currentStepTarget, t);
                 newPosition.y += math.sin(t * math.PI) * stepState.ValueRO.StepHeight;
 
                 var freeTransform = transforms[freeEntity];

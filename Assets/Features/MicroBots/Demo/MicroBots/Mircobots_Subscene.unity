@@ -225,7 +225,7 @@ Transform:
   m_GameObject: {fileID: 278687486}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.45}
+  m_LocalPosition: {x: 0, y: 0, z: -0.3}
   m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -262,7 +262,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MicroBots::HippoLib.MicroBots.MicrobotDockCommandAuthoring
   microbot: {fileID: 468937491}
   dock: {fileID: 1057638636}
-  tolerance: 0.2
+  tolerance: 0.1
 --- !u!4 &388011659
 Transform:
   m_ObjectHideFlags: 0
@@ -394,7 +394,7 @@ Transform:
   m_GameObject: {fileID: 1085593276}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.45}
+  m_LocalPosition: {x: 0, y: 0, z: 0.3}
   m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -493,7 +493,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6303459032199529300, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
       propertyPath: turnSpeed
-      value: 180
+      value: 1440
       objectReference: {fileID: 0}
     - target: {fileID: 6303459032199529300, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
       propertyPath: stepHeight

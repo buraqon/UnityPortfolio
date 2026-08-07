@@ -111,6 +111,16 @@ assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on poi
   rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
   `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
   immediately — no wasted frame at all, not just no wasted step.
+- **Fixed: heading changes only applied once per step landing instead of continuously mid-step.**
+  `HeadingAngle` was already updating every frame unconditionally (even mid-step), but
+  `StepTargetPosition` was computed once, at step-start, and never revisited — so a step's direction was
+  locked in the instant it began, and any turning that happened while it was still in flight only showed
+  up at the *next* step's start. This made turning look like it happened in discrete bursts timed to
+  step landings rather than smoothly. Fix: `MicrobotStepState.StepTargetPosition` (a fixed point) became
+  `StepSignedDistance` (a fixed scalar — direction × distance, decided once at step-start); the actual
+  target position is now recomputed every frame *during* the step from the anchor's current position and
+  the *live* `HeadingAngle`, so the free extremity's step continuously curves toward wherever the bot is
+  currently turning, converging exactly at landing instead of snapping.
 - **Open bug (being re-tested): rapid multi-toggle glitch (segments briefly overlapping) right as the
   first point is reached, then it self-corrects.** The one-frame-settling-guard fix attempt (tracking
   `LastAnchorIsSegmentB`) did not fix it and was reverted. Not yet retested against the target-splitting

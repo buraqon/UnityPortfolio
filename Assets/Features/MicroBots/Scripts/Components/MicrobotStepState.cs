@@ -16,7 +16,7 @@ namespace HippoLib.MicroBots
         // Runtime state
         public bool Initialized;
         public float3 StepStartPosition;
-        public float3 StepTargetPosition;
+        public float StepSignedDistance;
         public float StepProgress;
         public float HeadingAngle;
         public bool HasStepSizeOverride;
