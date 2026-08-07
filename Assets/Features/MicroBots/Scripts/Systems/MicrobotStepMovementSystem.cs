@@ -20,14 +20,14 @@ namespace HippoLib.MicroBots
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
             var stepLanded = false;
 
-            foreach (var (ikTarget, ikState, stepSettings, stepState) in SystemAPI
-                         .Query<RefRO<MicrobotIkTarget>, RefRO<MicrobotIkState>, RefRO<MicrobotStepSettings>, RefRW<MicrobotStepState>>()
+            foreach (var (ikTarget, ikState, stepState) in SystemAPI
+                         .Query<RefRO<MicrobotIkTarget>, RefRO<MicrobotIkState>, RefRW<MicrobotStepState>>()
                          .WithAll<MicrobotTag>())
             {
                 var targetEntity = ikTarget.ValueRO.TargetEntity;
                 var stepping = stepState.ValueRO.Initialized && stepState.ValueRO.StepProgress < 1f;
 
-                stepState.ValueRW.HeadingAngle += math.radians(stepSettings.ValueRO.TurnSpeed) * inputState.MoveInput.z * deltaTime;
+                stepState.ValueRW.HeadingAngle += math.radians(stepState.ValueRO.TurnSpeed) * inputState.MoveInput.z * deltaTime;
 
                 if (!stepping && math.abs(inputState.MoveInput.y) > 0.0001f)
                 {
@@ -35,10 +35,14 @@ namespace HippoLib.MicroBots
                     var anchorPos = ikState.ValueRO.AnchorWorldPosition;
                     var headingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
                     var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
+                    var stepDistance = stepState.ValueRO.HasStepSizeOverride
+                        ? stepState.ValueRO.StepSizeOverride
+                        : stepState.ValueRO.StepSize;
                     stepState.ValueRW.StepStartPosition = transforms[targetEntity].Position;
-                    stepState.ValueRW.StepTargetPosition = anchorPos + forwardDir * (direction * stepSettings.ValueRO.StepSize);
+                    stepState.ValueRW.StepTargetPosition = anchorPos + forwardDir * (direction * stepDistance);
                     stepState.ValueRW.StepProgress = 0f;
                     stepState.ValueRW.Initialized = true;
+                    stepState.ValueRW.HasStepSizeOverride = false;
                     stepping = true;
                 }
 
@@ -46,12 +50,12 @@ namespace HippoLib.MicroBots
                     continue;
 
                 var progressBeforeAdvance = stepState.ValueRO.StepProgress;
-                var newProgress = progressBeforeAdvance + stepSettings.ValueRO.StepSpeed * deltaTime;
+                var newProgress = progressBeforeAdvance + stepState.ValueRO.StepSpeed * deltaTime;
                 stepState.ValueRW.StepProgress = newProgress;
                 var t = math.saturate(newProgress);
 
                 var newPosition = math.lerp(stepState.ValueRO.StepStartPosition, stepState.ValueRO.StepTargetPosition, t);
-                newPosition.y += math.sin(t * math.PI) * stepSettings.ValueRO.StepHeight;
+                newPosition.y += math.sin(t * math.PI) * stepState.ValueRO.StepHeight;
 
                 var targetTransform = transforms[targetEntity];
                 targetTransform.Position = newPosition;

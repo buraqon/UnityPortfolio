@@ -11,9 +11,9 @@ Built in DOTS/ECS (`com.unity.entities` + `com.unity.entities.graphics`) rather 
 for swarm-scale parallelism (Burst-compiled jobs processing hundreds/thousands of bots each frame) once
 multi-bot work resumes.
 
-**Current focus, per the owner: get a single microbot's own shape/movement right before touching
-anything involving multiple bots.** Flocking, grouping, climbing-over-other-bots, and the multi-bot
-spawner are explicitly paused — see "Paused scope" below.
+**M1 (single microbot shape/movement) is done, per the owner.** Current focus has moved to M1.5 —
+resuming the paused multi-bot scope (spawner, multiple bots, separation, climbing-over-other-bots). See
+"Paused scope" below for what that covers.
 
 ## Single-bot behavior spec
 
@@ -38,14 +38,87 @@ spawner are explicitly paused — see "Paused scope" below.
   .HeadingAngle` around Y (rate set by `TurnSpeed`) — each new step's direction is that heading's
   forward vector rotated by the current angle, so turning changes where the *next* step goes rather
   than spinning the currently-planted pose in place.
-- **Open question**: right after first adding this heading rotation, the microbot's root/segments
-  stopped updating entirely (target kept moving, arm didn't) — reverted fully to isolate the cause, then
-  re-applied at the owner's request without yet confirming whether the heading change was actually the
-  cause or a coincidental/separate issue. **Watch for this symptom again** (target moves, arm frozen) —
-  if it recurs, the leading theory is `MicrobotIkState.BaseIsSegmentB` toggling every frame instead of
-  only on real toggles, which would make `MicrobotIkSystem`'s per-bot loop hit its early `continue`
-  (anchor-refresh branch) every frame and never reach the actual IK solve. Check `BaseIsSegmentB` in the
-  Entities Inspector for flickering if it happens again.
+- **`com.unity.physics` is currently uninstalled — deliberately parked, not a revert-in-progress.**
+  Installing it (tried 1.4.7 and 1.4.6, with and without the transitive Burst 1.8.28→1.8.29 bump)
+  reliably breaks rendering: `LocalTransform` and `LocalToWorld` both keep updating correctly every
+  frame (confirmed live in the Entities Inspector), the microbot mesh is visible in the Scene view, but
+  it never visually moves — no Console errors or warnings at all. Ruled out so far: our own code/asmdef
+  reference (reproduces even with zero `Unity.Physics` usage anywhere in `MicroBots`, purely from the
+  package being present), the Burst version bump specifically (reproduced with Burst unchanged at
+  1.8.28), transform-sync staleness (`LocalToWorld` does update), and Companion GameObject rendering (no
+  `CompanionLink` component on the entity). Leading unconfirmed theory: Unity Physics's graphics-
+  integration/interpolation system intercepts what Entities Graphics actually uploads for rendering,
+  independent of the `LocalToWorld` component value shown in the Inspector — there's changelog history
+  of similar bugs in past 1.x releases, but nothing confirmed for 1.4.6/1.4.7 on Unity 6000.4.0f1
+  specifically. The originally-suspected `BaseIsSegmentB`-flicker theory (from the A/D rotation work)
+  was a red herring — never reproduced without `com.unity.physics` installed, and this whole "target
+  moves, arm frozen"-shaped symptom turned out to really be "nothing renders live," not an IK-state
+  bug. **Next step, if resumed**: try newer `com.unity.physics` patch versions via Package Manager, or
+  check `WorldRenderBounds` for staleness (untested). Uneven-ground step landing (the raycast feature)
+  stays un-implemented until this is resolved — reverted back to flat anchor-height landing.
+
+## Docking command (single-bot test, in progress)
+
+Before building the spawner, testing whether a single microbot can be commanded to walk to a "dock" (two
+world-space points) and be considered arrived once each extremity occupies one of the two points (either
+assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on point 1).
+
+- **Dock is a fully standalone prefab** (`DockAuthoring` + `MicrobotDockPoints`: two child marker
+  Transforms baked to two world-space `float3`s) — it has no knowledge of any microbot.
+- **The command is a third, standalone link**, not baked into either `MicrobotAuthoring` or
+  `DockAuthoring`: `MicrobotDockCommandAuthoring` sits on its own GameObject, references a microbot +
+  a dock by `GameObject` reference. **Its `MicrobotDockCommand` component lives on the linker's own
+  entity, not on the microbot's** — a Baker can only `AddComponent` on an entity it owns (its own
+  primary entity, or one it created), never on another authoring component's entity; the first attempt
+  tried adding it directly to the microbot's entity and hit a baking `InvalidOperationException`
+  ("Entity doesn't belong to the current authoring component"). `MicrobotDockCommand` instead holds both
+  `MicrobotEntity` and `DockEntity` references, and `MicrobotNavigationSystem` looks up the microbot's
+  components via `ComponentLookup` rather than querying them directly off the command entity.
+- **`MicrobotNavigationSystem`** (new, `[UpdateAfter(MicrobotInputSystem)] [UpdateBefore
+  (MicrobotStepMovementSystem)]`) drives the *existing* step/turn gait toward the dock instead of
+  replacing it: for each undocked `MicrobotDockCommand`, it resolves each extremity's real world
+  position from the referenced microbot's `MicrobotIkState` (anchor tip via `AnchorWorldPosition`, free
+  tip approximated as the IK target entity's position), decides once which extremity is assigned to
+  which dock point (whichever pairing has lower total distance, cached via
+  `AssignmentDecided`/`SwapAssignment`), then overwrites the shared `MicrobotInputState.MoveInput`
+  singleton each frame: turn toward the free extremity's assigned point until roughly facing it, then
+  step forward.
+- **Dynamic step size to avoid overshoot** — `MicrobotStepState` gained `HasStepSizeOverride`/
+  `StepSizeOverride`; `MicrobotNavigationSystem` writes `min(nominal StepSize, remaining distance to the
+  free extremity's assigned point)` every frame while actively steering, and
+  `MicrobotStepMovementSystem`'s step-start block uses that override (if set) instead of the nominal
+  `StepSize`, consuming/clearing it once the step starts. Far from the dock this equals the normal fixed
+  step size (no behavior change); close to it, steps shrink to exactly the remaining distance instead of
+  overshooting past the point. This is also what makes docking work when the two dock points aren't a
+  "natural" distance apart for the bot's stride — each extremity's *final* step can be sized to land
+  exactly where needed, rather than being limited to fixed-size hops. Manual WASD stepping is unaffected
+  (override is only ever set by navigation). Not yet tested in Play mode.
+- **`MicrobotStepSettings` and `MicrobotStepState` merged into one component** (kept the `StepState`
+  name) — every system that touched either one already queried/looked-up both together on the same
+  entity every time (`MicrobotStepMovementSystem`, `MicrobotNavigationSystem`, `MicrobotAuthoring`'s
+  Baker); the split wasn't earning its keep. The authored fields (`StepSize`, `StepSpeed`, `StepHeight`,
+  `TurnSpeed`) and the runtime fields are grouped with a one-line comment separating them, but live in
+  the same struct now. `MicrobotStepSettings.cs` was deleted.
+- **Don't waste a gait cycle re-stepping an already-satisfied extremity** — the gait always alternates
+  (every landed step auto-toggles anchor/free), so once the currently-free extremity reaches its own
+  assigned point, its *next* turn would otherwise still fire a (harmless but wasted) near-zero step
+  instead of letting the still-unsatisfied extremity move. `MicrobotNavigationSystem` now checks
+  `freeReached` (is the currently-free extremity already within tolerance of its own point) each frame:
+  if so, it skips the forward step entirely, steers heading toward the *anchor's* target instead (since
+  that's who needs to move next), and force-requests a toggle via the shared `ToggleBase` singleton
+  rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
+  `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
+  immediately — no wasted frame at all, not just no wasted step.
+- **Turn-gate/heading-epsilon angles moved from hardcoded constants to authored fields** —
+  `MicrobotAuthoring.turnGate`/`headingEpsilon` (Inspector-tunable) are plain degrees end-to-end, same as
+  `turnSpeed` — no `Degrees`/`Radians` suffixes anywhere, and no conversion at bake time. They're stored
+  in degrees on `MicrobotStepState.TurnGate`/`HeadingEpsilon`, and `MicrobotNavigationSystem` converts to
+  radians with `math.radians(...)` only at the point of use, matching how `TurnSpeed` was already
+  handled in `MicrobotStepMovementSystem`.
+- **Known limitation, deliberately not solved yet**: `MicrobotInputState` is still one shared singleton
+  across all bots (pre-existing issue, not introduced here) — this only behaves correctly with exactly
+  one commanded bot. Multi-bot commanding needs per-bot input, which is out of scope until M1.5's
+  spawner work makes it unavoidable.
 
 ## Paused scope (not deleted — resume after single-bot movement is satisfying)
 
@@ -58,8 +131,8 @@ spawner are explicitly paused — see "Paused scope" below.
 
 ## Roadmap
 
-- [ ] **M1 — Single bot moving well:** current focus, IK + step-movement working end-to-end — just
-      needs tuning/iteration before checking this off.
+- [x] **M1 — Single bot moving well:** owner has called this done on flat ground. IK + step-movement
+      (heading, height lift, auto-toggle-on-landing) all work end-to-end.
   - [x] Install `com.unity.entities` + `com.unity.entities.graphics`
   - [x] `MicroBots.asmdef`
   - [x] Shape components: `MicrobotTag`, `MicrobotMovementTarget`, `MicrobotSegments`, `MicrobotAuthoring`
@@ -71,10 +144,12 @@ spawner are explicitly paused — see "Paused scope" below.
   - [x] Step movement mode: `MicrobotStepSettings` (plain struct, computed `sin(t·π)` lift),
         `MicrobotStepState`, `MicrobotStepMovementSystem` (start/advance a step, auto-toggle on landing)
   - [x] ~~Open bug: step height doesn't visibly stick~~ — fixed, verified working (see Decisions log)
-  - [ ] Full Play-mode verification of the whole M1 loop end-to-end (see Status)
-  - [ ] Iterate until satisfied
+  - [~] Uneven-ground step landing via Unity Physics raycast — **deferred out of M1, not required to
+        call M1 done.** `com.unity.physics` breaks rendering on install (see Decisions log); revisit
+        later, possibly without Unity.Physics.
+  - [x] Full Play-mode verification of the whole M1 loop end-to-end (see Status)
 - [ ] **M1.5 — Resume paused scope:** multiple bots, spawner, separation, climbing-over-stationary-bots
-      (see "Paused scope" above) — once single-bot movement is satisfying
+      (see "Paused scope" above) — **current focus**, now that single-bot movement is satisfying
 - [ ] **M2 — Docking detection:** spatial-hash based extremity proximity queries; `Seeking`/`Docking`
       states; define what turns a foot landing into "docked" (occupied flags, joint formation)
 - [ ] **M3 — Assembly:** rigid connections via `Unity.Transforms` `Parent`/`LocalTransform` hierarchy;
@@ -144,15 +219,25 @@ spawner are explicitly paused — see "Paused scope" below.
   usual "everything in Assembly-CSharp" convention, chosen deliberately for compiler-enforced isolation
   from other features (per the standalone-feature project rule) and because it's standard practice for
   DOTS code.
-- **Unity Physics still deferred** — no physics queries or constraints are used anywhere currently; the
-  IK solve is pure analytic math.
+- **Unity Physics pulled in early for uneven-ground step landing** — originally deferred to M3 (joint
+  constraints), but landing-height detection needed real colliders sooner. `MicrobotStepMovementSystem`
+  now does **one downward raycast at step-start** (`SampleGroundHeight`, via
+  `PhysicsWorldSingleton.CollisionWorld.CastRay`) against the intended X/Z landing point, using the hit
+  height for `StepTargetPosition.y` (falls back to the anchor's current height if nothing is hit). Step
+  *completion* stays purely time-based (`StepProgress >= 1`), unchanged — only the landing *height*
+  comes from physics. Mid-arc obstacle clearance (making sure the arc's peak clears a hill mid-stride)
+  is explicitly deferred until bots are observed clipping through terrain. Both `PhysicsWorldSingleton`
+  and `CollisionWorld.CastRay` are Burst-compatible, so `[BurstCompile]` is unaffected.
+  **Requires manual scene setup**: terrain/obstacle GameObjects need real Unity Physics collider
+  components (not just visual meshes) in the SubScene for this to have anything to hit — not yet
+  verified in Play mode.
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.
 
 ## Status
 
-Working end-to-end, confirmed by the owner in Play mode: IK foundation, anchor toggle (manual `T` +
-automatic on step landing), and step movement (horizontal progress, height lift, alternating anchors)
-all function correctly together. Manual movement mode was built, verified, then removed once step mode
-was ready — every bot is step-mode only now. What's left for M1 is tuning/iteration, not bug-fixing.
+M1 is done: IK foundation, anchor toggle (manual `T` + automatic on step landing), and step movement
+(horizontal progress, height lift, alternating anchors, A/D heading turn) all confirmed working together
+by the owner in Play mode, on flat ground. Uneven-ground step landing is explicitly deferred (see
+Decisions log) and does not block M1. Moving on to M1.5 next.

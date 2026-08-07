@@ -15,6 +15,8 @@ namespace HippoLib.MicroBots
         public float stepSpeed = 1f;
         public float stepHeight = 0.15f;
         public float turnSpeed = 90f;
+        public float turnGate = 30f;
+        public float headingEpsilon = 2f;
 
         private class Baker : Baker<MicrobotAuthoring>
         {
@@ -28,14 +30,15 @@ namespace HippoLib.MicroBots
                 });
                 AddComponent(root, new MicrobotIkState());
 
-                AddComponent(root, new MicrobotStepSettings
+                AddComponent(root, new MicrobotStepState
                 {
                     StepSize = authoring.stepSize,
                     StepSpeed = authoring.stepSpeed,
                     StepHeight = authoring.stepHeight,
-                    TurnSpeed = authoring.turnSpeed
+                    TurnSpeed = authoring.turnSpeed,
+                    TurnGate = authoring.turnGate,
+                    HeadingEpsilon = authoring.headingEpsilon
                 });
-                AddComponent(root, new MicrobotStepState());
 
                 DependsOn(authoring.target);
                 var targetEntity = GetEntity(authoring.target, TransformUsageFlags.Dynamic);

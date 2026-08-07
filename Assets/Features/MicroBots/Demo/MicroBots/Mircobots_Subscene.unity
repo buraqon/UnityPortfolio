@@ -119,6 +119,63 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &388011657
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 388011659}
+  - component: {fileID: 388011658}
+  m_Layer: 0
+  m_Name: MicrobotCommand
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &388011658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388011657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fb85bb2d45fe124babf4ae3c831e5ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MicroBots::HippoLib.MicroBots.MicrobotDockCommandAuthoring
+  microbot: {fileID: 468937491}
+  dock: {fileID: 1057638636}
+  tolerance: 0.2
+--- !u!4 &388011659
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388011657}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.26, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &468937491 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4610771263617348519, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
+  m_PrefabInstance: {fileID: 1764813032259183259}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1057638636 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8107349519966197409, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+  m_PrefabInstance: {fileID: 1306754102008848568}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1085593276
 GameObject:
   m_ObjectHideFlags: 0
@@ -225,43 +282,71 @@ Transform:
   m_GameObject: {fileID: 1085593276}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.27, z: 0.45}
+  m_LocalPosition: {x: 0, y: 0, z: 0.45}
   m_LocalScale: {x: 0.05, y: 0.05, z: 0.05}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2112740753
-GameObject:
+--- !u!1001 &1306754102008848568
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2112740755}
-  m_Layer: 0
-  m_Name: MicrobotSettings
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2112740755
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2112740753}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.93
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2.19
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 652792466126757555, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8107349519966197409, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+      propertyPath: m_Name
+      value: Microbot_Dock
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects:
+    - {fileID: 867822669059036668, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+    - {fileID: 4486966404368385430, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: cc5438157107c3c4ba98fac62d3b66fb, type: 3}
 --- !u!1001 &1764813032259183259
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -289,6 +374,14 @@ PrefabInstance:
     - target: {fileID: 6303459032199529300, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
       propertyPath: stepSize
       value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6303459032199529300, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
+      propertyPath: turnGate
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6303459032199529300, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
+      propertyPath: turnSpeed
+      value: 720
       objectReference: {fileID: 0}
     - target: {fileID: 6303459032199529300, guid: efee0092637b53f4fb22d3b212e1c725, type: 3}
       propertyPath: stepHeight
@@ -365,4 +458,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 1764813032259183259}
   - {fileID: 1085593280}
-  - {fileID: 2112740755}
+  - {fileID: 1306754102008848568}
+  - {fileID: 388011659}
