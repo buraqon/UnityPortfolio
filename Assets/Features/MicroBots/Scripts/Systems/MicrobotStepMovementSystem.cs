@@ -47,11 +47,16 @@ namespace HippoLib.MicroBots
                     var stepDistance = stepState.ValueRO.HasStepSizeOverride
                         ? stepState.ValueRO.StepSizeOverride
                         : stepState.ValueRO.StepSize;
+                    var targetHeight = stepState.ValueRO.HasStepHeightOverride
+                        ? stepState.ValueRO.StepHeightOverride
+                        : transforms[anchorEntity].Position.y;
                     stepState.ValueRW.StepStartPosition = transforms[freeEntity].Position;
                     stepState.ValueRW.StepSignedDistance = direction * stepDistance;
+                    stepState.ValueRW.StepTargetHeight = targetHeight;
                     stepState.ValueRW.StepProgress = 0f;
                     stepState.ValueRW.Initialized = true;
                     stepState.ValueRW.HasStepSizeOverride = false;
+                    stepState.ValueRW.HasStepHeightOverride = false;
                     stepping = true;
                 }
 
@@ -67,6 +72,7 @@ namespace HippoLib.MicroBots
                 var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
                 var anchorPos = transforms[anchorEntity].Position;
                 var currentStepTarget = anchorPos + forwardDir * stepState.ValueRO.StepSignedDistance;
+                currentStepTarget.y = stepState.ValueRO.StepTargetHeight;
 
                 var newPosition = math.lerp(stepState.ValueRO.StepStartPosition, currentStepTarget, t);
                 newPosition.y += math.sin(t * math.PI) * stepState.ValueRO.StepHeight;

@@ -21,6 +21,9 @@ namespace HippoLib.MicroBots
         public float HeadingAngle;
         public bool HasStepSizeOverride;
         public float StepSizeOverride;
+        public bool HasStepHeightOverride;
+        public float StepHeightOverride;
+        public float StepTargetHeight;
         public bool ForceEnd;
     }
 }

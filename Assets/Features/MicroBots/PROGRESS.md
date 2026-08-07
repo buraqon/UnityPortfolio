@@ -111,6 +111,25 @@ assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on poi
   rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
   `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
   immediately — no wasted frame at all, not just no wasted step.
+- **Docking now accounts for height, without any ground detection.** Previously steps were flat-only —
+  Y always inherited the anchor's current height, so a dock point above/below ground could never
+  actually be reached (the reached-check is full 3D distance, but the step system could only close the
+  horizontal gap). Added a height-override mechanism mirroring the existing step-size override:
+  `MicrobotStepState.HasStepHeightOverride`/`StepHeightOverride` (written by `MicrobotNavigationSystem`
+  every frame, set to `steerToPoint.y` — the dock point's actual, already-known height, no raycasting
+  needed) and `StepTargetHeight` (captured once at step-start, like `StepSignedDistance`, so it stays
+  fixed for that step's duration). `MicrobotStepMovementSystem`'s advance block now overwrites
+  `currentStepTarget.y` with `StepTargetHeight` instead of always inheriting the anchor's live height;
+  the cosmetic `sin(t·π)*StepHeight` arc still layers on top. Manual WASD steps are unaffected (the
+  override is only ever set by navigation, so they keep falling back to the anchor's height). No change
+  needed to the reached-check itself — once the step system can actually close the vertical gap, the
+  existing full-3D distance check naturally detects arrival. This is scoped specifically to docking, not
+  general uneven-ground walking — that remains parked pending the `com.unity.physics` rendering issue.
+  **Gated on the other extremity already being docked**: the height override is only written when
+  `anchorReached` (the currently-stationary extremity has already fully reached its own point) is true —
+  so the bot first plants one extremity precisely (horizontally only, flat height) before the other is
+  ever allowed to start climbing/descending toward its own (possibly elevated) point. Before that, height
+  stays flat exactly as it did before this feature existed.
 - **Unified toggle-triggering through a single mechanism.** `MicrobotNavigationSystem` used to request a
   toggle directly (writing `MicrobotInputState.ToggleBase` itself) when the free extremity had already
   reached its point. Now it just sets `MicrobotStepState.ForceEnd = true` instead — `MicrobotStepMovementSystem`

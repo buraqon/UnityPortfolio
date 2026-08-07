@@ -73,6 +73,7 @@ namespace HippoLib.MicroBots
                 hasCommand = true;
 
                 var freeReached = anchorIsB ? aReached : bReached;
+                var anchorReached = anchorIsB ? bReached : aReached;
 
                 float3 steerFromPos;
                 float3 steerToPoint;
@@ -114,6 +115,13 @@ namespace HippoLib.MicroBots
                 var nominalStepSize = stepState.StepSize;
                 stepState.HasStepSizeOverride = true;
                 stepState.StepSizeOverride = math.min(nominalStepSize, remainingDistance);
+
+                if (anchorReached)
+                {
+                    stepState.HasStepHeightOverride = true;
+                    stepState.StepHeightOverride = steerToPoint.y;
+                }
+
                 stepStateLookup[microbotEntity] = stepState;
             }
 
