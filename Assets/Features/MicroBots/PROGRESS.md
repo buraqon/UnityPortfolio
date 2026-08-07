@@ -132,6 +132,15 @@ target simply stays put, so there's no pop to guard against, and the IK solve ru
 unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a scene change**:
 `MicrobotAuthoring.target` (one Transform) is now `targetA`/`targetB` (two Transforms).
 
+- **Quick test: a list of docks with a rest pause between them**, to exercise the system against
+  multiple targets in sequence rather than just one. `MicrobotDockCommand.DockEntity` (single) became
+  `CurrentDockIndex` + a `DynamicBuffer<MicrobotDockListElement>` (added via
+  `MicrobotDockCommandAuthoring.docks`, a `List<GameObject>`); `RestTime`/`RestTimer`/`Resting`... — well,
+  `Resting` ended up folded into the existing `Docked` flag rather than a separate state (once `Docked`,
+  `MicrobotNavigationSystem` counts `RestTimer` down instead of doing anything else; at zero it advances
+  `CurrentDockIndex` — wrapping back to `0` after the last dock, looping indefinitely — and resets
+  `Docked`/`PointAClaimed`/`PointBClaimed` for the next one). Purely a test/demo addition, not part of
+  the M1.5/M2 plan.
 - **Dropped the fixed A/B↔point pairing decision entirely — it doesn't matter which extremity lands on
   which dock point**, only that each point ends up occupied by *someone*. Removed
   `AssignmentDecided`/`SwapAssignment`/the upfront `costDirect`/`costSwap` comparison; `MicrobotDockCommand`

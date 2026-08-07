@@ -15,22 +15,39 @@ namespace HippoLib.MicroBots
         {
             state.CompleteDependency();
 
+            var deltaTime = SystemAPI.Time.DeltaTime;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
             var dockPointsLookup = SystemAPI.GetComponentLookup<MicrobotDockPoints>(true);
             var ikTargetsLookup = SystemAPI.GetComponentLookup<MicrobotIkTargets>(true);
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
             var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
 
-            foreach (var dockCommand in SystemAPI.Query<RefRW<MicrobotDockCommand>>())
+            foreach (var (dockCommand, dockList) in SystemAPI
+                         .Query<RefRW<MicrobotDockCommand>, DynamicBuffer<MicrobotDockListElement>>())
             {
-                if (dockCommand.ValueRO.Docked)
+                if (dockList.Length == 0)
                     continue;
+
+                if (dockCommand.ValueRO.Docked)
+                {
+                    dockCommand.ValueRW.RestTimer -= deltaTime;
+                    if (dockCommand.ValueRO.RestTimer <= 0f)
+                    {
+                        dockCommand.ValueRW.CurrentDockIndex = (dockCommand.ValueRO.CurrentDockIndex + 1) % dockList.Length;
+                        dockCommand.ValueRW.Docked = false;
+                        dockCommand.ValueRW.PointAClaimed = false;
+                        dockCommand.ValueRW.PointBClaimed = false;
+                    }
+
+                    continue;
+                }
 
                 var microbotEntity = dockCommand.ValueRO.MicrobotEntity;
-                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockPointsLookup.HasComponent(dockCommand.ValueRO.DockEntity))
+                var dockEntity = dockList[dockCommand.ValueRO.CurrentDockIndex].DockEntity;
+                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockPointsLookup.HasComponent(dockEntity))
                     continue;
 
-                var dockPoints = dockPointsLookup[dockCommand.ValueRO.DockEntity];
+                var dockPoints = dockPointsLookup[dockEntity];
                 var ikTargets = ikTargetsLookup[microbotEntity];
 
                 var posA = transforms[ikTargets.TargetAEntity].Position;
@@ -50,6 +67,7 @@ namespace HippoLib.MicroBots
                 if (pointAClaimed && pointBClaimed)
                 {
                     dockCommand.ValueRW.Docked = true;
+                    dockCommand.ValueRW.RestTimer = dockCommand.ValueRO.RestTime;
                     continue;
                 }
 

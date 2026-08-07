@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
@@ -6,26 +7,37 @@ namespace HippoLib.MicroBots
     public class MicrobotDockCommandAuthoring : MonoBehaviour
     {
         public GameObject microbot;
-        public GameObject dock;
+        public List<GameObject> docks;
         public float tolerance = 0.15f;
+        public float restTime = 1f;
 
         private class Baker : Baker<MicrobotDockCommandAuthoring>
         {
             public override void Bake(MicrobotDockCommandAuthoring authoring)
             {
                 DependsOn(authoring.microbot);
-                DependsOn(authoring.dock);
 
                 var entity = GetEntity(TransformUsageFlags.None);
                 var microbotEntity = GetEntity(authoring.microbot, TransformUsageFlags.Dynamic);
-                var dockEntity = GetEntity(authoring.dock, TransformUsageFlags.None);
 
                 AddComponent(entity, new MicrobotDockCommand
                 {
                     MicrobotEntity = microbotEntity,
-                    DockEntity = dockEntity,
-                    Tolerance = authoring.tolerance
+                    CurrentDockIndex = 0,
+                    Tolerance = authoring.tolerance,
+                    RestTime = authoring.restTime
                 });
+
+                var buffer = AddBuffer<MicrobotDockListElement>(entity);
+                foreach (var dock in authoring.docks)
+                {
+                    if (dock == null)
+                        continue;
+
+                    DependsOn(dock);
+                    var dockEntity = GetEntity(dock, TransformUsageFlags.None);
+                    buffer.Add(new MicrobotDockListElement { DockEntity = dockEntity });
+                }
             }
         }
     }
