@@ -9,8 +9,9 @@ namespace HippoLib.ECSDemo
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            var dependency = state.Dependency;
             var job = new RotateJob { DeltaTime = SystemAPI.Time.DeltaTime };
-            job.ScheduleParallel();
+            job.ScheduleParallel(dependency);
         }
 
         [BurstCompile]

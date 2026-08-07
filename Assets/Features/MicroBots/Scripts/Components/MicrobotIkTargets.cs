@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace HippoLib.MicroBots
 {
@@ -6,5 +7,7 @@ namespace HippoLib.MicroBots
     {
         public Entity TargetAEntity;
         public Entity TargetBEntity;
+        public float3 TargetAOffset;
+        public float3 TargetBOffset;
     }
 }

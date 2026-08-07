@@ -132,6 +132,60 @@ target simply stays put, so there's no pop to guard against, and the IK solve ru
 unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a scene change**:
 `MicrobotAuthoring.target` (one Transform) is now `targetA`/`targetB` (two Transforms).
 
+- **Spawner added (M1.5 start)** — `MicrobotSpawner`/`MicrobotSpawnerAuthoring`/`MicrobotSpawnSystem`:
+  a one-shot system that instantiates `SpawnCount` copies of a microbot prefab at random positions
+  within `SpawnAreaSize` around the spawner's position (plus a fixed `spawnHeight` vertical offset), then destroys the spawner entity so it doesn't
+  re-fire. Spawned bots have no dock command by default — they're idle (and thus `Dockable`, once
+  `MicrobotDockableStateSystem` picks them up) until something assigns them one.
+  **Required prefab-setup change**: `MicrobotAuthoring`'s `targetA`/`targetB` now bake with
+  `TransformUsageFlags.WorldSpace` instead of `.Dynamic`, so they can be nested as children of the
+  microbot prefab root (needed for the whole bot — root, segments, targets — to instantiate as one
+  linked group) while still baking to world-space `LocalTransform.Position`, which every system already
+  assumes. Should be a no-op for the existing scene setup (unparented targets bake the same either way);
+  worth double-checking if anything looks off after this change. **Bug found and fixed**: the first
+  attempt used `TransformUsageFlags.WorldSpace` *alone* (replacing `.Dynamic` instead of combining with
+  it) — that dropped the runtime-movable `LocalTransform` request entirely, so target entities baked
+  without a usable `LocalTransform`, causing a Burst-abort `ArgumentException`
+  (`AppendRemovedComponentRecordError`) the moment `MicrobotNavigationSystem` indexed into it. Fixed by
+  using `TransformUsageFlags.Dynamic | TransformUsageFlags.WorldSpace` (they're meant to be combined,
+  not substituted). Also added an explicit `HasComponent` guard in `MicrobotNavigationSystem` before
+  indexing target entities' transforms, so a stale/invalid entity reference (e.g. a leftover authoring
+  reference from reorganizing the prefab) skips gracefully instead of crashing the whole system.
+  **Manual Editor work still needed** (can't be done from here): turn the existing microbot setup into
+  an actual Prefab asset (root + segmentA/segmentB as children), assign it to a
+  `MicrobotSpawnerAuthoring` GameObject in the SubScene. Not yet tested in Play mode.
+- **Removed target Transforms (and even the idea of an authored offset) entirely — `targetA`/`targetB`
+  no longer exist as fields at all.** This fixes a real bug the prefab/spawner setup exposed: target
+  entities baked with `TransformUsageFlags.WorldSpace` are deliberately *unparented* (needed so their
+  `LocalTransform.Position` reads as world position, which every system assumes) — but that also means
+  they don't follow the root at runtime. When `MicrobotSpawnSystem` repositioned only the root to a
+  random spawn point, every spawned bot's targets would've stayed wherever the *original prefab* was
+  authored in the Editor, not moved to the new spawn position. First fix attempt added authored
+  `targetAOffset`/`targetBOffset` `Vector3` fields — unnecessary, since a target's starting position is
+  just "wherever that segment's tip already is," fully derivable from data `MicrobotAuthoring` already
+  has (segment rotation + length), the same forward-kinematics math the old (now-removed)
+  `ComputeTipWorldPosition` used. So the Baker computes it directly:
+  `rootRotation * segment.localRotation * forward * length`, no field, no manual entry, no way for it to
+  be wrong. `MicrobotAuthoring`'s Baker creates the target entities via `CreateAdditionalEntity` (no
+  GameObject needed at all); `MicrobotIkTargets` still carries the resulting offsets
+  (`TargetAOffset`/`TargetBOffset`) so `MicrobotSpawnSystem` — which switched from a deferred
+  `EntityCommandBuffer` to direct `EntityManager` calls specifically so it can immediately read back each
+  clone's `MicrobotIkTargets` (entity references already remapped to the clone's own targets) — can
+  reposition targets to `spawnPosition + offset`, not just the root. No manual per-bot setup needed at
+  all now; segment length/rotation is the only input, same as it always was.
+  **Bug found and fixed**: the target entities' `LocalTransform` was set via `SetComponent`, which
+  assumes the component already exists — but `CreateAdditionalEntity` doesn't auto-add `LocalTransform`
+  the way GameObject-derived entities do (there's no source Transform for the baking pipeline to default
+  from), so it didn't exist yet at that point and baking threw
+  (`AssertEntityHasComponent`/`AppendRemovedComponentRecordError`, spamming even outside Play mode since
+  SubScene live-conversion re-bakes continuously). Fixed by using `AddComponent` instead.
+- **Fixed: `MicrobotSpawnSystem` crashed on run** (`InvalidOperationException: Structural changes are
+  not allowed while iterating over entities`) — `state.EntityManager.DestroyEntity(entity)` was called
+  on the spawner entity *while still inside* the `foreach` over the same `MicrobotSpawner` query that
+  produced it; destroying the entity you're currently iterating invalidates the chunk mid-iteration.
+  `Instantiate`/`SetComponentData` on the newly-spawned (different-archetype) entities didn't trigger
+  this. Fixed by collecting spawner entities into a `NativeList` during the loop and destroying them in
+  a separate pass after it finishes.
 - **Unified "dockable" concept (`Dockable`) so bots can dock onto other bots, not just static Dock
   prefabs** — the ECS answer to "an `IDockable` interface": `Dockable : IComponentData { float3 PointA;
   float3 PointB; }` replaces `MicrobotDockPoints`. `DockAuthoring` bakes it once, statically, same as
@@ -206,6 +260,45 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
   above).
 - **Next up**: unification just landed, not yet tested in Play mode end-to-end.
 
+## Structure blueprint — target shape → bot count → connectivity graph
+
+A standalone planning/math layer under `Assets/Features/MicroBots/Blueprint/`, deliberately decoupled from
+the ECS/runtime code (pure C#, no entities, nothing consumes it yet). Full write-up and derivations in
+[Blueprint/BLUEPRINT.md](Blueprint/BLUEPRINT.md); the short version:
+
+- **Target = the cube's 12 edges (wireframe), not faces or interior.** A bot is a 1-D strut, so struts tile
+  curves cheaply and areas/volumes expensively (2m cube: 36 bots as a wireframe, ~110 as a face lattice
+  (~160 braced), thousands as a solid). The wireframe still exercises the genuinely new thing — junctions where 3 bots
+  meet — while every other link stays a straight chain.
+- **`BotSpanSpec`** models a bot as a structural element: `Reach = LengthA + LengthB`, usable
+  `MaxSpan = Reach · 0.9` (never span the full reach — that's the 2-bone IK singularity, the same boundary
+  the far-away-goal deadlock ran into), `MinSpan = |LengthA − LengthB|`, plus the elbow angle a given span
+  implies.
+- **Remainder policy: uniform span, fixed segments.** Segment lengths are hardware (one prefab for the
+  whole swarm) — don't shrink them to fit. Divide each edge into `n = ceil(L / MaxSpan)` equal spans of
+  `L/n` and let the elbow bend more, which is what the IK does anyway. Proven bound: the resulting span is
+  always in `(MaxSpan/2, MaxSpan]` for `n ≥ 2`, so no bot is ever asked to fold below half-extended, at any
+  cube size. The rejected alternative (full-span bots + one short remainder) can silently produce a
+  remainder bot below `MinSpan`, i.e. unbuildable, depending on cube size.
+- **Totals**: `bots = 12n`, `nodes = 8 + 12(n−1)`. With the current bot (0.5/0.5, reach 1.0): a 2-unit cube
+  is 36 bots / 32 nodes, a 10-unit cube is 144 bots / 140 nodes — linear in cube size, not cubic.
+- **`StructureBlueprint` is a general graph, not a chain of pairs**: nodes carry a **capacity** (mid-edge
+  nodes 2, the 8 corners 3), links carry their own two attachment points (so a link is directly consumable
+  as a `Dockable`-shaped pair of world points) plus which cube edge they came from. Corner sharing is
+  **structural, by construction** — canonical 3-bit corner indices and a bit-rule edge enumeration, never
+  float-position dedup. `Validate` checks valence-sum, capacity, span-in-range and orphans;
+  `BuildOrderFrom` gives BFS placement order so every bot has an already-anchored endpoint when its turn
+  comes.
+- **What it will ask of the runtime later** (flagged, not worked around): `Dockable` exposes exactly two
+  points and joints mate exactly two extremities, but a cube corner needs **three** coincident — an
+  attachment site with capacity + occupancy is unavoidable for any closed shape (every polyhedron vertex
+  has valence ≥ 3). Also needs an assignment layer (which bot takes which link). No change to IK, stepping
+  or navigation.
+- **Deferred, documented in the write-up**: corner hub radius (implemented, defaults to 0), Euler-trail
+  routing (4 trails instead of 12 runs — saves up to 33% on small cubes, chamfers the corners), general
+  meshes, and the fact that a ball-jointed wireframe cube is a *mechanism, not a structure* (it shears
+  without diagonals or stiff joints).
+
 ## Paused scope (not deleted — resume after single-bot movement is satisfying)
 
 - Multiple bots, spawner/spawn system.
@@ -238,6 +331,9 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
       (see "Paused scope" above) — **current focus**, now that single-bot movement is satisfying
 - [ ] **M2 — Docking detection:** spatial-hash based extremity proximity queries; `Seeking`/`Docking`
       states; define what turns a foot landing into "docked" (occupied flags, joint formation)
+- [~] **Blueprint (planning layer, off to the side — not a milestone gate):** target shape → bot count →
+      connectivity graph, pure C# under `Blueprint/`. Cube wireframe done and validated; consuming a
+      blueprint at runtime is unscheduled and belongs to M3.
 - [ ] **M3 — Assembly:** rigid connections via `Unity.Transforms` `Parent`/`LocalTransform` hierarchy;
       still-articulated connections via `Unity.Physics` spherical/ball-and-socket joint constraints,
       never single-axis hinges (Unity Physics installed at this point, used only for joint constraints)

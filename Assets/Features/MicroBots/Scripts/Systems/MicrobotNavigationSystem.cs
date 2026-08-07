@@ -50,6 +50,9 @@ namespace HippoLib.MicroBots
                 var dockPoints = dockableLookup[dockEntity];
                 var ikTargets = ikTargetsLookup[microbotEntity];
 
+                if (!transforms.HasComponent(ikTargets.TargetAEntity) || !transforms.HasComponent(ikTargets.TargetBEntity))
+                    continue;
+
                 var posA = transforms[ikTargets.TargetAEntity].Position;
                 var posB = transforms[ikTargets.TargetBEntity].Position;
                 var tolerance = dockCommand.ValueRO.Tolerance;

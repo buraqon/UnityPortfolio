@@ -52,6 +52,14 @@ MonoBehaviour:
   segmentB: {fileID: 6778252752194650901}
   segmentBLength: 0.4
   destination: {x: 5, y: 0, z: 5}
+  targetA: {fileID: 0}
+  targetB: {fileID: 0}
+  stepSize: 0.3
+  stepSpeed: 1
+  stepHeight: 0.15
+  turnSpeed: 90
+  turnGate: 30
+  headingEpsilon: 2
 --- !u!1 &8228346408578016514
 GameObject:
   m_ObjectHideFlags: 0
@@ -212,6 +220,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2993818887253588339, guid: a3b07a8c1874a48459ad26828771af82, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 0794bf90e501a7645950b62a205225b8, type: 2}
     - target: {fileID: 5378717942242408712, guid: a3b07a8c1874a48459ad26828771af82, type: 3}
       propertyPath: m_Name
       value: SegmentB
@@ -274,6 +286,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2993818887253588339, guid: a3b07a8c1874a48459ad26828771af82, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 6ae2440a3c6fac3429e3874fe32710c8, type: 2}
     - target: {fileID: 5378717942242408712, guid: a3b07a8c1874a48459ad26828771af82, type: 3}
       propertyPath: m_Name
       value: SegmentA
