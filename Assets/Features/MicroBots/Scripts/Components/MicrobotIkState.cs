@@ -5,7 +5,6 @@ namespace HippoLib.MicroBots
 {
     public struct MicrobotIkState : IComponentData
     {
-        public bool IsManualMovement;
         public bool BaseIsSegmentB;
         public bool AnchorInitialized;
         public bool AnchorIsSegmentB;
