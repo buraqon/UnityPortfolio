@@ -79,9 +79,6 @@ namespace HippoLib.MicroBots
                 float3 steerToPoint;
                 if (freeReached)
                 {
-                    // The extremity currently free to step has already reached its own point;
-                    // steer toward the anchor's target instead and skip stepping so the anchor
-                    // (not yet satisfied) can take over without wasting a gait cycle.
                     steerFromPos = anchorPos;
                     steerToPoint = anchorIsB ? targetForB : targetForA;
                     toggleRequested = true;
@@ -95,10 +92,12 @@ namespace HippoLib.MicroBots
                 var toGoal = steerToPoint - steerFromPos;
                 toGoal.y = 0f;
 
+                var anchorToGoal = steerToPoint - anchorPos;
+                anchorToGoal.y = 0f;
+                var remainingDistance = math.length(anchorToGoal);
+
                 var turnInput = 0f;
                 var forwardInput = 0f;
-
-                var remainingDistance = math.length(toGoal);
 
                 if (math.lengthsq(toGoal) > 0.0001f)
                 {

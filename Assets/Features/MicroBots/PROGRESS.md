@@ -111,6 +111,15 @@ assignment — extremity A on point 1 & B on point 2, or A on point 2 & B on poi
   rather than waiting for a step to land. Because `MicrobotNavigationSystem` runs before
   `MicrobotStepMovementSystem`/`MicrobotIkSystem` in the same frame, this toggle actually takes effect
   immediately — no wasted frame at all, not just no wasted step.
+- **Fixed: dynamic step-size distance was measured from the wrong reference point.**
+  `remainingDistance` (used to shrink the step near a dock point) was computed as
+  `length(steerToPoint - steerFromPos)` — distance from the free extremity's *current* position to its
+  target. But the step itself gets applied as `anchorPos + forwardDir * distance` — a radius from the
+  *anchor*, not from the free extremity's current position. Those only agree when the free extremity
+  happens to be sitting exactly on the anchor→target line; otherwise the step consistently over/undershot
+  by the anchor↔free offset, which is exactly what made tightening `Tolerance` misbehave. Fix:
+  `remainingDistance` is now `length(steerToPoint - anchorPos)` — measured the same way the step itself
+  is measured. The heading/turn calculation (`toGoal`, still based on `steerFromPos`) is unchanged.
 - **Fixed: heading changes only applied once per step landing instead of continuously mid-step.**
   `HeadingAngle` was already updating every frame unconditionally (even mid-step), but
   `StepTargetPosition` was computed once, at step-start, and never revisited — so a step's direction was
