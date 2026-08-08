@@ -1,7 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
 
 namespace HippoLib.MicroBots
 {
@@ -99,14 +98,19 @@ namespace HippoLib.MicroBots
 
             if (SystemAPI.TryGetSingleton<MicrobotFollowCommand>(out var followCommand))
             {
-                foreach (var (goalComponent, transform) in SystemAPI
-                             .Query<RefRW<MicrobotGoal>, RefRO<LocalTransform>>()
+                foreach (var (goalComponent, ikTargets) in SystemAPI
+                             .Query<RefRW<MicrobotGoal>, RefRO<MicrobotIkTargets>>()
                              .WithAll<MicrobotTag>())
                 {
                     if (goalComponent.ValueRO.HasGoal)
                         continue;
 
-                    if (math.distance(transform.ValueRO.Position, followCommand.Destination) <= followCommand.Tolerance)
+                    // Only one extremity needs to land on the destination - once either has, the
+                    // follow command is satisfied for this bot; don't drag the other one there too.
+                    var arrived =
+                        math.distance(ikTargets.ValueRO.TargetAPos, followCommand.Destination) <= followCommand.Tolerance ||
+                        math.distance(ikTargets.ValueRO.TargetBPos, followCommand.Destination) <= followCommand.Tolerance;
+                    if (arrived)
                         continue;
 
                     goalComponent.ValueRW.HasGoal = true;

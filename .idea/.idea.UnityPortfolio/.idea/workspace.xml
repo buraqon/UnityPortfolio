@@ -3,13 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotStepState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotStepState.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotDockableStateSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotDockableStateSystem.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotFollowCommandSystem.cs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotFollowCommandSystem.cs.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -118,7 +112,7 @@
       <workItem from="1786104622300" duration="6062000" />
       <workItem from="1786117174430" duration="2938000" />
       <workItem from="1786133413008" duration="7506000" />
-      <workItem from="1786160835475" duration="4402000" />
+      <workItem from="1786160835475" duration="4718000" />
     </task>
     <servers />
   </component>

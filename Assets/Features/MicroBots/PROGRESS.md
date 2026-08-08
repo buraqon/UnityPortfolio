@@ -563,6 +563,22 @@ behind the math. The short version:
   `MicrobotNavigationSystem` reading it), never by writing `MicrobotGoal` directly** — `MicrobotGoal` is
   private to the Navigation ↔ StepMovement handshake. `MicrobotDockableStateSystem`'s idle check
   (`!HasGoal && !stepping`) updated to read the new component. **Not yet tested in Play mode.**
+  **Deliberate scope note**: manual WASD/`T` keyboard control is *not* routed through
+  `MicrobotNavigationSystem` — `MicrobotStepMovementSystem` still reads `MicrobotInputState.MoveInput`
+  directly and steps without ever touching `MicrobotGoal` when there's no active goal. Owner explicitly
+  asked to leave this alone for now; the "everything goes through Navigation" rule currently covers the
+  dock-command and follow-command sources only, not manual debug control.
+- **Fixed: follow-command was driving both extremities all the way to the destination.** The
+  arrival check used to test the bot's *root* `LocalTransform.Position` against
+  `MicrobotFollowCommand.Tolerance` — since the root sits between the two extremities, that check
+  didn't pass until whichever extremity was trailing behind also finished walking all the way to the
+  destination, so both segments ended up converging on the same point (a degenerate stacked pose).
+  Changed to check each extremity's own `MicrobotIkTargets.TargetAPos`/`TargetBPos` directly: once
+  *either* one is within `Tolerance` of the destination, the follow command counts as satisfied for
+  that bot and no further goal gets armed — the other extremity is left wherever it currently is,
+  matching the docking-adjacent idea that a bot doesn't need every part of itself to physically arrive,
+  just enough of it to be "there." Also let this loop drop its `LocalTransform` dependency entirely
+  (reads `MicrobotIkTargets` instead), which was only ever a coarse approximation anyway.
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.
