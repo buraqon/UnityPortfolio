@@ -1,7 +1,6 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
 
 namespace HippoLib.MicroBots
 {
@@ -17,12 +16,12 @@ namespace HippoLib.MicroBots
 
             var deltaTime = SystemAPI.Time.DeltaTime;
             var dockableLookup = SystemAPI.GetComponentLookup<Dockable>(true);
+            var ikTargetsLookup = SystemAPI.GetComponentLookup<MicrobotIkTargets>(true);
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
             var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
 
-            foreach (var (dockCommand, ikTargets, dockList) in SystemAPI
-                         .Query<RefRW<MicrobotDockCommand>, RefRO<MicrobotIkTargets>,
-                             DynamicBuffer<MicrobotDockListElement>>())
+            foreach (var (dockCommand, dockList) in SystemAPI
+                         .Query<RefRW<MicrobotDockCommand>, DynamicBuffer<MicrobotDockListElement>>())
             {
                 if (dockList.Length == 0)
                     continue;
@@ -44,13 +43,14 @@ namespace HippoLib.MicroBots
 
                 var microbotEntity = dockCommand.ValueRO.MicrobotEntity;
                 var dockEntity = dockList[dockCommand.ValueRO.CurrentDockIndex].DockEntity;
-                if (!dockableLookup.HasComponent(dockEntity))
+                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockableLookup.HasComponent(dockEntity))
                     continue;
 
+                var ikTargets = ikTargetsLookup[microbotEntity];
                 var dockPoints = dockableLookup[dockEntity];
 
-                var posA = ikTargets.ValueRO.TargetAPos;
-                var posB = ikTargets.ValueRO.TargetBPos;
+                var posA = ikTargets.TargetAPos;
+                var posB = ikTargets.TargetBPos;
 
                 var tolerance = dockCommand.ValueRO.Tolerance;
 
@@ -76,7 +76,7 @@ namespace HippoLib.MicroBots
                     continue;
 
                 var ikState = ikStateLookup[microbotEntity];
-                var freePos = ikState.BaseIsSegmentB ? ikTargets.ValueRO.TargetAPos : ikTargets.ValueRO.TargetBPos;
+                var freePos = ikState.BaseIsSegmentB ? ikTargets.TargetAPos : ikTargets.TargetBPos;
 
                 float3 goal;
                 if (!pointAClaimed && !pointBClaimed)

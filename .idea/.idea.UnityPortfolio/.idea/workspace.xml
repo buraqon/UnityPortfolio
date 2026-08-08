@@ -2,13 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotIkTargets.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotIkTargets.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotDockableStateSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotDockableStateSystem.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotIkSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotIkSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/BotSpanSpec.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/BotSpanSpec.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/CubeWireframeBuilder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/CubeWireframeBuilder.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +114,7 @@
       <workItem from="1786104622300" duration="6062000" />
       <workItem from="1786117174430" duration="2938000" />
       <workItem from="1786133413008" duration="7506000" />
-      <workItem from="1786160835475" duration="1747000" />
+      <workItem from="1786160835475" duration="2288000" />
     </task>
     <servers />
   </component>
