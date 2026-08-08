@@ -18,11 +18,10 @@ namespace HippoLib.MicroBots
             SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
             var deltaTime = SystemAPI.Time.DeltaTime;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
-            var stepLanded = false;
 
             foreach (var (ikTargets, ikState, stepState) in SystemAPI
-                         .Query<RefRW<MicrobotIkTargets>, RefRO<MicrobotIkState>, RefRW<MicrobotStepState>>()
-                         .WithAll<MicrobotTag>()) 
+                         .Query<RefRW<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<MicrobotStepState>>()
+                         .WithAll<MicrobotTag>())
             {
                 var baseIsB = ikState.ValueRO.BaseIsSegmentB;
                 // var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
@@ -39,7 +38,7 @@ namespace HippoLib.MicroBots
                     stepState.ValueRW.HasGoal = false;
                     stepState.ValueRW.Initialized = false;
                     stepState.ValueRW.StepProgress = 0f;
-                    stepLanded = true;
+                    ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
                     continue;
                 }
 
@@ -136,30 +135,24 @@ namespace HippoLib.MicroBots
                         if (math.distance(newPosition, stepState.ValueRO.GoalPoint) <= stepState.ValueRO.GoalTolerance)
                         {
                             stepState.ValueRW.HasGoal = false;
-                            stepLanded = true;
+                            ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
                         }
                         else if (!stepState.ValueRO.IsFinalApproach)
                         {
                             // Still far from the goal - this was an ordinary full-stride step, so toggle
                             // normally and let the gait alternate (an implicit path of steps toward the
                             // goal), instead of suppressing the toggle and getting stuck at max reach.
-                            stepLanded = true;
+                            ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
                         }
                         // else: within final-approach range but missed tolerance - don't toggle, the same
                         // extremity takes another (re-aimed, re-sized) step next frame.
                     }
                     else
                     {
-                        stepLanded = true;
+                        ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
                     }
                 }
             }
-
-            SystemAPI.SetSingleton(new MicrobotInputState
-            {
-                ToggleBase = inputState.ToggleBase || stepLanded,
-                MoveInput = inputState.MoveInput
-            });
         }
     }
 }

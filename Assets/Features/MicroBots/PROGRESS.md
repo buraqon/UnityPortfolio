@@ -519,6 +519,34 @@ behind the math. The short version:
   instantiated entities are collected into a local `NativeList<Entity>` first, and the buffer is only
   fetched fresh *after* all `Instantiate` calls for that spawner finish (a `DynamicBuffer` handle held
   across a structural change is stale/unsafe) — then appended in one pass.
+- **Added the "dumb-follower shared-command" controller (M1.5 item).** `MicrobotFollowCommand`
+  (`float3 Destination`, `float Tolerance`) is a session-wide singleton baked once from a standalone
+  `MicrobotFollowCommandAuthoring` GameObject (a `Transform` field or, if left empty, the authoring
+  GameObject's own position, at bake time — not live-tracked at runtime yet). New
+  `MicrobotFollowCommandSystem` (`[UpdateBefore(MicrobotStepMovementSystem)]`) runs every frame: if the
+  singleton exists, every `MicrobotTag` entity without an active goal (`!HasGoal`) and not already within
+  `Tolerance` of `Destination` (checked against the bot's root `LocalTransform.Position`, a coarse
+  approximation — the actual precise arrival check is the existing per-extremity one already inside
+  `MicrobotStepMovementSystem`) gets `HasGoal`/`GoalPoint`/`GoalTolerance` set to the shared destination.
+  Reuses the exact same goal-seeking primitive `MicrobotNavigationSystem` drives docking through — no new
+  movement logic, just a different source assigning the goal. Deliberately "dumb": no per-bot opt-in tag,
+  no path planning, every bot with the singleton present just walks straight at the same shared point.
+  **Not yet tested in Play mode.**
+- **Fixed: multi-bot snapping/teleporting once several bots stepped simultaneously (surfaced by
+  follow-command testing with a spawned group).** `MicrobotStepMovementSystem` used to accumulate
+  landings into a single shared local `stepLanded` bool across its *entire* per-frame loop over all
+  bots, then write `ToggleBase = inputState.ToggleBase || stepLanded` to the one global
+  `MicrobotInputState` singleton; `MicrobotIkSystem` then applied that single flag to flip
+  `BaseIsSegmentB` on **every** bot with `MicrobotTag`. With one manually-driven test bot this was
+  invisible (the only bot that could land *was* the only bot). With many bots stepping on independent
+  frames, any single bot landing anywhere forced every other bot — including ones mid-lerp through
+  their own step — to swap anchor/free roles out from under themselves, instantly relocating whichever
+  extremity was newly "free" to the other's stale position. Fixed by toggling `BaseIsSegmentB` directly,
+  per-entity, at each of the four landing points already inside `MicrobotStepMovementSystem`'s loop
+  (query changed from `RefRO<MicrobotIkState>` to `RefRW<MicrobotIkState>`), instead of funneling through
+  the shared singleton. The manual `T`-key toggle in `MicrobotIkSystem` is untouched and still reads
+  `MicrobotInputState.ToggleBase` — that one's meant to stay a global broadcast (manual single/shared-bot
+  testing) since it comes straight from the keyboard, not from any particular bot's landing.
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.

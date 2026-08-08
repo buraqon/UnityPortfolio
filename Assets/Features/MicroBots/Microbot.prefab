@@ -51,9 +51,6 @@ MonoBehaviour:
   segmentALength: 0.4
   segmentB: {fileID: 6778252752194650901}
   segmentBLength: 0.4
-  destination: {x: 5, y: 0, z: 5}
-  targetA: {fileID: 0}
-  targetB: {fileID: 0}
   stepSize: 0.7
   stepSpeed: 1
   stepHeight: 0.8
