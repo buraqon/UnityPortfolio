@@ -6,7 +6,6 @@ namespace HippoLib.MicroBots
     public class MicrobotSpatialGridAuthoring : MonoBehaviour
     {
         public float cellSize = 1f;
-        public float maxClimbHeight = 0.3f;
 
         private class Baker : Baker<MicrobotSpatialGridAuthoring>
         {
@@ -16,8 +15,7 @@ namespace HippoLib.MicroBots
 
                 AddComponent(entity, new MicrobotSpatialGridSettings
                 {
-                    CellSize = authoring.cellSize,
-                    MaxClimbHeight = authoring.maxClimbHeight
+                    CellSize = authoring.cellSize
                 });
             }
         }

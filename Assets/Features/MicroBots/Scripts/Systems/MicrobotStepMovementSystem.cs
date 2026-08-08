@@ -1,5 +1,4 @@
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -18,18 +17,10 @@ namespace HippoLib.MicroBots
 
             SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
-            var climbPointsLookup = SystemAPI.GetComponentLookup<MicrobotClimbPoints>(true);
 
-            var hasGrid = SystemAPI.TryGetSingleton<MicrobotSpatialGrid>(out var grid);
-            var maxClimbHeight = SystemAPI.TryGetSingleton<MicrobotSpatialGridSettings>(out var gridSettings)
-                ? gridSettings.MaxClimbHeight
-                : 0f;
-
-            foreach (var (ikTargets, ikState, stepState, goal, entity) in SystemAPI
+            foreach (var (ikTargets, ikState, stepState, goal) in SystemAPI
                          .Query<RefRW<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<MicrobotStepState>, RefRW<MicrobotGoal>>()
-                         .WithAll<MicrobotTag>()
-                         .WithEntityAccess())
+                         .WithAll<MicrobotTag>())
             {
                 var baseIsB = ikState.ValueRO.BaseIsSegmentB;
                 var anchorPos = baseIsB ? ikTargets.ValueRO.TargetBPos : ikTargets.ValueRO.TargetAPos;
@@ -87,9 +78,7 @@ namespace HippoLib.MicroBots
                             var anchorToGoal = goal.ValueRO.GoalPoint - anchorPos;
                             anchorToGoal.y = 0f;
                             var remaining = math.length(anchorToGoal);
-                            var closeHorizontally = remaining <= stepState.ValueRO.StepSize;
-                            var closeInHeight = math.abs(anchorPos.y - goal.ValueRO.GoalPoint.y) <= goal.ValueRO.GoalTolerance;
-                            isFinalApproach = closeHorizontally && closeInHeight;
+                            isFinalApproach = remaining <= stepState.ValueRO.StepSize;
                             stepDistance = math.min(stepState.ValueRO.StepSize, remaining);
                             direction = 1f;
                             stepState.ValueRW.IsFinalApproach = isFinalApproach;
@@ -100,22 +89,7 @@ namespace HippoLib.MicroBots
                             direction = math.sign(inputState.MoveInput.y);
                         }
 
-                        float targetHeight;
-                        if (isFinalApproach)
-                        {
-                            targetHeight = goal.ValueRO.GoalPoint.y;
-                        }
-                        else
-                        {
-                            var landingHeadingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
-                            var landingForward = math.rotate(landingHeadingRotation, new float3(0f, 0f, 1f));
-                            var landingPos = anchorPos + landingForward * (direction * stepDistance);
-
-                            targetHeight = hasGrid
-                                ? SampleStandableHeight(grid.Cells, grid.CellSize, maxClimbHeight, anchorPos.y,
-                                    transforms, climbPointsLookup, landingPos, entity)
-                                : 0f;
-                        }
+                        var targetHeight = isFinalApproach ? goal.ValueRO.GoalPoint.y : 0f;
 
                         stepState.ValueRW.StepStartPosition = freePos;
                         stepState.ValueRW.StepSignedDistance = direction * stepDistance;
@@ -167,56 +141,6 @@ namespace HippoLib.MicroBots
                     }
                 }
             }
-        }
-
-        private static float SampleStandableHeight(
-            NativeParallelMultiHashMap<int2, Entity> cells,
-            float cellSize,
-            float maxClimbHeight,
-            float anchorHeight,
-            ComponentLookup<LocalTransform> transforms,
-            ComponentLookup<MicrobotClimbPoints> climbPointsLookup,
-            float3 landingPos,
-            Entity self)
-        {
-            var highest = 0f;
-            var maxReachableHeight = anchorHeight + maxClimbHeight;
-            var landingCell = new int2((int)math.floor(landingPos.x / cellSize), (int)math.floor(landingPos.z / cellSize));
-
-            for (var dx = -1; dx <= 1; dx++)
-            {
-                for (var dz = -1; dz <= 1; dz++)
-                {
-                    var cell = landingCell + new int2(dx, dz);
-                    if (!cells.TryGetFirstValue(cell, out var candidate, out var iterator))
-                        continue;
-
-                    do
-                    {
-                        if (candidate == self || !transforms.HasComponent(candidate) || !climbPointsLookup.HasComponent(candidate))
-                            continue;
-
-                        var candidatePos = transforms[candidate].Position;
-                        var horizontalDistance = math.distance(
-                            new float2(landingPos.x, landingPos.z),
-                            new float2(candidatePos.x, candidatePos.z));
-
-                        if (horizontalDistance <= cellSize)
-                        {
-                            var climbPoints = climbPointsLookup[candidate];
-
-                            if (climbPoints.PointA.y <= maxReachableHeight)
-                                highest = math.max(highest, climbPoints.PointA.y);
-                            if (climbPoints.PointB.y <= maxReachableHeight)
-                                highest = math.max(highest, climbPoints.PointB.y);
-                            if (climbPoints.Elbow.y <= maxReachableHeight)
-                                highest = math.max(highest, climbPoints.Elbow.y);
-                        }
-                    } while (cells.TryGetNextValue(out candidate, ref iterator));
-                }
-            }
-
-            return highest;
         }
     }
 }

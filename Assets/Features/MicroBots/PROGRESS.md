@@ -687,6 +687,27 @@ behind the math. The short version:
   successfully verified end-to-end (still landing on/near the destination height in ways that didn't look
   like genuine incremental climbing before the owner asked to stop and clean up). Revisit this fresh
   rather than assuming the current state is correct.
+- **Removed the reactive per-step climbing lookup - it violated the Navigation-is-sole-decision-maker
+  rule and that's why it kept misbehaving.** Root design realization: reaching an elevated destination
+  needs *intermediate* goals (real climbable points chained together as sequential `GoalPoint`s), decided
+  by `MicrobotNavigationSystem`, not guessed reactively by `MicrobotStepMovementSystem` one step at a
+  time with no sense of an overall route. `SampleStandableHeight`, `MaxClimbHeight`
+  (`MicrobotSpatialGridSettings`/`Authoring`), and the height half of `isFinalApproach`
+  (`closeInHeight`) are all removed - `MicrobotStepMovementSystem` is back to its pre-climbing shape:
+  `targetHeight = isFinalApproach ? GoalPoint.y : 0f`, `isFinalApproach` gated on horizontal distance
+  only (`remaining <= StepSize`), no grid consultation at all. Once Navigation is extended to chain real
+  climbable points as intermediate goals, every step toward any goal (intermediate or final) can trust
+  `GoalPoint.y` directly the same way dock points already do - no separate climbing-aware step logic
+  needed.
+  **Kept** (Navigation will need these as a query source for picking intermediate points):
+  `MicrobotSpatialGrid`/`MicrobotSpatialGridSystem` (the spatial index) and
+  `MicrobotClimbPoints`/`MicrobotClimbPointsSystem` (the 3-point-per-idle-bot data). Only the reactive
+  step-level *consumer* of that data is gone.
+  **Next planned step (not yet started)**: extend `MicrobotNavigationSystem` to, when a goal's height is
+  out of single-step reach, pick the nearest currently-reachable climbable point (queried from the grid)
+  in the destination's general direction as an intermediate `GoalPoint` instead of the final destination,
+  re-evaluating once each intermediate point is reached (greedy one-hop-at-a-time, not full pathfinding -
+  a real graph-search version was discussed as a fallback if greedy gets stuck in a local dead end).
 - **Microbots can no longer be dock targets.** `MicrobotClimbPointsSystem` no longer adds/removes/updates
   `Dockable` on microbots - it now only maintains `MicrobotClimbPoints`. `Dockable` still exists exactly as
   before for static `Dock` prefabs (baked once, statically, via `DockAuthoring` - untouched). A dock
