@@ -504,6 +504,12 @@ behind the math. The short version:
   **Requires manual scene setup**: terrain/obstacle GameObjects need real Unity Physics collider
   components (not just visual meshes) in the SubScene for this to have anything to hit — not yet
   verified in Play mode.
+- **Removed the auto-dock system entirely.** Deleted `MicrobotAutoDockConfig`, `MicrobotAutoDockAuthoring`,
+  `MicrobotAutoDockSystem`, and `MicrobotDockAssigned` (components/authoring/systems). The
+  `MicrobotDockCommand`/`MicrobotDockListElement` linker + `MicrobotNavigationSystem` path (the one just
+  fixed above) is unaffected — it's a separate, standalone way of driving a bot to dock via an explicitly
+  authored `MicrobotDockCommandAuthoring` linker, not dependent on the auto-assigning system. No other
+  files referenced the removed types (checked scenes/prefabs too), so this was a clean removal.
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.
