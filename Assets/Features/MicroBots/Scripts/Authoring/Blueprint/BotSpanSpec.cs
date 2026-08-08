@@ -15,6 +15,8 @@ namespace HippoLib.MicroBots.Blueprint
             SpanSafety = 0.9f
         };
 
+        public bool IsValid => LengthA > 0f && LengthB > 0f && SpanSafety > 0f;
+
         public float Reach => LengthA + LengthB;
 
         // Never span the full reach: a fully extended 2-bone chain is an IK singularity
@@ -42,7 +44,9 @@ namespace HippoLib.MicroBots.Blueprint
 
         public int BotsToSpan(float distance)
         {
-            if (distance <= MaxSpan)
+            // Without this an unset spec gives MaxSpan 0, and ceil(distance/0) overflows the
+            // int cast into a chain-building loop that never realistically ends.
+            if (!IsValid || distance <= MaxSpan)
             {
                 return 1;
             }

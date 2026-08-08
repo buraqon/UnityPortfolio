@@ -18,6 +18,8 @@ namespace HippoLib.MicroBots.Blueprint
         };
 
         public float UsableEdgeLength => Size - 2f * CornerHubRadius;
+
+        public bool IsValid => Size > 0f && CornerHubRadius >= 0f && UsableEdgeLength > 0f && Bot.IsValid;
     }
 
     public static class CubeWireframeBuilder
@@ -63,6 +65,11 @@ namespace HippoLib.MicroBots.Blueprint
         public static StructureBlueprint Build(CubeWireframeSettings settings)
         {
             var blueprint = new StructureBlueprint();
+
+            if (!settings.IsValid)
+            {
+                return blueprint;
+            }
 
             for (var corner = 0; corner < CornerCount; corner++)
             {

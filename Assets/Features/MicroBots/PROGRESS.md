@@ -238,6 +238,32 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
   understood gap now, not a mystery, and a deliberate tradeoff for a stable pause point. **Also**: any
   microbot prefab/instance reconfigured during the Vector3 detour needs its `targetA`/`targetB` Transform
   references reassigned again in the Inspector.
+- **Went back to the `float3`-based `MicrobotIkTargets` after all** (owner-driven, iterated directly in
+  the systems this time rather than via the Baker) — `MicrobotIkTargets` is `{ float3 TargetAPos; float3
+  TargetBPos; }` again, no entity references, no separate target entities at all. `MicrobotStepMovementSystem`,
+  `MicrobotNavigationSystem`, and `MicrobotDockableStateSystem` all read/write these fields directly on
+  the bot's own component instead of going through a `ComponentLookup<LocalTransform>` indirection to a
+  separate entity. **Initial values are set lazily, not at bake time**: `MicrobotIkState` gained
+  `Initialized`; on a bot's first `MicrobotIkSystem` update, if `!Initialized`, it computes both tip
+  positions from current geometry (`rootPos + rotate(rootRotation * segment.localRotation, forward) *
+  length` — same forward-kinematics formula used throughout this feature's history) and writes them into
+  `TargetAPos`/`TargetBPos` before doing anything else that frame. This was chosen over doing the init in
+  `OnCreate` specifically because `OnCreate` only fires once, when the *system* is created — not once per
+  entity, and not guaranteed to run after a bot actually exists (spawned bots created later via
+  `MicrobotSpawnSystem` would never get initialized if this lived in `OnCreate`). Lazy per-entity init on
+  first `OnUpdate` correctly handles both scene-baked and runtime-spawned bots uniformly. **This also
+  incidentally fixes the spawn-repositioning gap** noted above — since target values are computed fresh
+  from wherever the entity actually is (not baked once and carried forward), a spawned bot's targets
+  naturally end up correct without `MicrobotSpawnSystem` needing to know about them at all. Not yet
+  verified in Play mode.
+- **Fixed: dock commands never started at all.** `MicrobotNavigationSystem`'s query tried to pull
+  `RefRO<MicrobotIkTargets>` directly alongside `RefRW<MicrobotDockCommand>`/
+  `DynamicBuffer<MicrobotDockListElement>` from the same entity — but `MicrobotIkTargets` lives on the
+  *microbot's* entity, while the dock command components live on the separate *linker* entity (by
+  design, per the standalone-link architecture). No single entity ever has all three components at once,
+  so the query matched zero entities and the whole system body never ran, for any dock command, ever.
+  Fixed by going back to a `ComponentLookup<MicrobotIkTargets>` indexed by `dockCommand.MicrobotEntity` —
+  the same pattern already used for `ikStateLookup`/`stepStateLookup` in the same method.
 - **Unified "dockable" concept (`Dockable`) so bots can dock onto other bots, not just static Dock
   prefabs** — the ECS answer to "an `IDockable` interface": `Dockable : IComponentData { float3 PointA;
   float3 PointB; }` replaces `MicrobotDockPoints`. `DockAuthoring` bakes it once, statically, same as
@@ -314,9 +340,12 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
 
 ## Structure blueprint — target shape → bot count → connectivity graph
 
-A standalone planning/math layer under `Assets/Features/MicroBots/Blueprint/`, deliberately decoupled from
+A standalone planning/math layer under `Scripts/Authoring/Blueprint/`, deliberately decoupled from
 the ECS/runtime code (pure C#, no entities, nothing consumes it yet). Full write-up and derivations in
-[Blueprint/BLUEPRINT.md](Blueprint/BLUEPRINT.md); the short version:
+[Scripts/Authoring/Blueprint/BLUEPRINT.md](Scripts/Authoring/Blueprint/BLUEPRINT.md). **Anyone picking this
+up should read [Scripts/Authoring/Blueprint/README.md](Scripts/Authoring/Blueprint/README.md) first** — it's
+the contract (data model, guarantees, how to generate and read one, gotchas); BLUEPRINT.md is the *why*
+behind the math. The short version:
 
 - **Target = the cube's 12 edges (wireframe), not faces or interior.** A bot is a 1-D strut, so struts tile
   curves cheaply and areas/volumes expensively (2m cube: 36 bots as a wireframe, ~110 as a face lattice
@@ -341,6 +370,15 @@ the ECS/runtime code (pure C#, no entities, nothing consumes it yet). Full write
   float-position dedup. `Validate` checks valence-sum, capacity, span-in-range and orphans;
   `BuildOrderFrom` gives BFS placement order so every bot has an already-anchored endpoint when its turn
   comes.
+- **`CubeBlueprintSource` (MonoBehaviour) holds one blueprint in the scene.** Cube center is
+  `transform.position`, so dragging the GameObject moves the blueprint; the rest (cube size, segment
+  lengths, span safety, corner hub radius) are inspector fields. Rebuilds lazily whenever the settings it
+  was built from stop matching the current ones — one mechanism covering both inspector edits and
+  transform moves, so it can't go stale. The blueprint is **not serialized**: regenerating is deterministic
+  and takes microseconds, so caching it in the scene file would only create a staleness risk. Draws the
+  node/link graph as gizmos (alternating link colours so individual bots are countable, hubs bigger and
+  yellow). **Must live in the main scene, not the SubScene** — plain MonoBehaviours in a baked SubScene
+  don't exist at runtime.
 - **What it will ask of the runtime later** (flagged, not worked around): `Dockable` exposes exactly two
   points and joints mate exactly two extremities, but a cube corner needs **three** coincident — an
   attachment site with capacity + occupancy is unavoidable for any closed shape (every polyhedron vertex
@@ -384,7 +422,8 @@ the ECS/runtime code (pure C#, no entities, nothing consumes it yet). Full write
 - [ ] **M2 — Docking detection:** spatial-hash based extremity proximity queries; `Seeking`/`Docking`
       states; define what turns a foot landing into "docked" (occupied flags, joint formation)
 - [~] **Blueprint (planning layer, off to the side — not a milestone gate):** target shape → bot count →
-      connectivity graph, pure C# under `Blueprint/`. Cube wireframe done and validated; consuming a
+      connectivity graph, pure C# under `Scripts/Authoring/Blueprint/`. Cube wireframe done and validated,
+      `CubeBlueprintSource` MonoBehaviour holds one in the scene; consuming a
       blueprint at runtime is unscheduled and belongs to M3.
 - [ ] **M3 — Assembly:** rigid connections via `Unity.Transforms` `Parent`/`LocalTransform` hierarchy;
       still-articulated connections via `Unity.Physics` spherical/ball-and-socket joint constraints,
