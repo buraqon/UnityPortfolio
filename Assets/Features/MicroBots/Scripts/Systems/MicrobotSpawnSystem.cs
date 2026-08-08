@@ -36,10 +36,6 @@ namespace HippoLib.MicroBots
 
                     var spawnPosition = spawner.SpawnCenter + offset;
                     state.EntityManager.SetComponentData(instance, LocalTransform.FromPosition(spawnPosition));
-
-                    var ikTargets = state.EntityManager.GetComponentData<MicrobotIkTargets>(instance);
-                    state.EntityManager.SetComponentData(ikTargets.TargetAEntity, LocalTransform.FromPosition(spawnPosition + ikTargets.TargetAOffset));
-                    state.EntityManager.SetComponentData(ikTargets.TargetBEntity, LocalTransform.FromPosition(spawnPosition + ikTargets.TargetBOffset));
                 }
             }
 

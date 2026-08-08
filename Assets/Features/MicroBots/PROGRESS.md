@@ -224,6 +224,20 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
   it naturally picks up newly-spawned bots whenever they appear, with no explicit dependency on spawn
   timing. Same two-pass structural-change pattern as the spawner (collect entities during read-only
   iteration, do all `CreateEntity`/`AddBuffer`/`AddComponent` calls after).
+- **Reverted the `targetA`/`targetB` → `Vector3` offset change (and `CreateAdditionalEntity`) back to
+  plain child Transforms.** In practice it caused legs to snap and rotate incorrectly — never fully
+  root-caused (leading suspicion: the geometrically-computed offset, derived from `segment.localRotation`
+  + length, didn't actually match the real authored segment geometry closely enough, versus manually-
+  placed Transforms which are exact by construction) — owner asked to revert to the known-working state
+  rather than keep debugging mid-flow. `MicrobotAuthoring` has `targetA`/`targetB` (`Transform`) fields
+  again, baked via `GetEntity(..., TransformUsageFlags.Dynamic | TransformUsageFlags.WorldSpace)`;
+  `MicrobotIkTargets` is back to just the two entity references, no offsets. **This reintroduces the
+  spawn-repositioning limitation** the offset approach was originally meant to fix: `MicrobotSpawnSystem`
+  now only repositions the spawned root, not its targets, so a spawned bot's targets stay wherever the
+  *prefab* was authored in the Editor rather than following the new spawn position — a known,
+  understood gap now, not a mystery, and a deliberate tradeoff for a stable pause point. **Also**: any
+  microbot prefab/instance reconfigured during the Vector3 detour needs its `targetA`/`targetB` Transform
+  references reassigned again in the Inspector.
 - **Unified "dockable" concept (`Dockable`) so bots can dock onto other bots, not just static Dock
   prefabs** — the ECS answer to "an `IDockable` interface": `Dockable : IComponentData { float3 PointA;
   float3 PointB; }` replaces `MicrobotDockPoints`. `DockAuthoring` bakes it once, statically, same as

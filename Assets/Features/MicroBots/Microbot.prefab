@@ -54,9 +54,9 @@ MonoBehaviour:
   destination: {x: 5, y: 0, z: 5}
   targetA: {fileID: 0}
   targetB: {fileID: 0}
-  stepSize: 0.3
+  stepSize: 0.7
   stepSpeed: 1
-  stepHeight: 0.15
+  stepHeight: 0.8
   turnSpeed: 90
   turnGate: 30
   headingEpsilon: 2
