@@ -26,8 +26,11 @@ namespace HippoLib.MicroBots
                     SpawnCount = authoring.spawnCount,
                     SpawnCenter = authoring.transform.position,
                     SpawnAreaSize = new float3(authoring.spawnAreaSize.x, authoring.spawnAreaSize.y, authoring.spawnAreaSize.z),
-                    SpawnHeight = authoring.spawnHeight
+                    SpawnHeight = authoring.spawnHeight,
+                    HasSpawned = false
                 });
+
+                AddBuffer<MicrobotSpawnedElement>(entity);
             }
         }
     }

@@ -14,17 +14,19 @@ namespace HippoLib.MicroBots
         {
             var random = Random.CreateFromIndex((uint)SystemAPI.Time.ElapsedTime + 1);
 
-            var spawnersToProcess = new NativeList<MicrobotSpawner>(Allocator.Temp);
-            var spawnersToRemove = new NativeList<Entity>(Allocator.Temp);
+            var spawnersToProcess = new NativeList<Entity>(Allocator.Temp);
 
             foreach (var (spawner, entity) in SystemAPI.Query<RefRO<MicrobotSpawner>>().WithEntityAccess())
             {
-                spawnersToProcess.Add(spawner.ValueRO);
-                spawnersToRemove.Add(entity);
+                if (!spawner.ValueRO.HasSpawned)
+                    spawnersToProcess.Add(entity);
             }
 
-            foreach (var spawner in spawnersToProcess)
+            foreach (var spawnerEntity in spawnersToProcess)
             {
+                var spawner = state.EntityManager.GetComponentData<MicrobotSpawner>(spawnerEntity);
+                var spawnedEntities = new NativeList<Entity>(spawner.SpawnCount, Allocator.Temp);
+
                 for (var i = 0; i < spawner.SpawnCount; i++)
                 {
                     var instance = state.EntityManager.Instantiate(spawner.Prefab);
@@ -36,16 +38,23 @@ namespace HippoLib.MicroBots
 
                     var spawnPosition = spawner.SpawnCenter + offset;
                     state.EntityManager.SetComponentData(instance, LocalTransform.FromPosition(spawnPosition));
-                }
-            }
 
-            foreach (var spawnerEntity in spawnersToRemove)
-            {
-                state.EntityManager.DestroyEntity(spawnerEntity);
+                    spawnedEntities.Add(instance);
+                }
+
+                var spawnedBuffer = state.EntityManager.GetBuffer<MicrobotSpawnedElement>(spawnerEntity);
+                foreach (var spawnedEntity in spawnedEntities)
+                {
+                    spawnedBuffer.Add(new MicrobotSpawnedElement { Value = spawnedEntity });
+                }
+
+                spawnedEntities.Dispose();
+
+                spawner.HasSpawned = true;
+                state.EntityManager.SetComponentData(spawnerEntity, spawner);
             }
 
             spawnersToProcess.Dispose();
-            spawnersToRemove.Dispose();
         }
     }
 }

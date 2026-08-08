@@ -510,6 +510,15 @@ behind the math. The short version:
   fixed above) is unaffected — it's a separate, standalone way of driving a bot to dock via an explicitly
   authored `MicrobotDockCommandAuthoring` linker, not dependent on the auto-assigning system. No other
   files referenced the removed types (checked scenes/prefabs too), so this was a clean removal.
+- **Spawner no longer self-destructs, and now tracks what it spawned.** `MicrobotSpawner` gained a
+  `HasSpawned` flag so `MicrobotSpawnSystem` only runs the spawn loop once per spawner instead of
+  destroying the entity afterward; the spawner entity (and its `MicrobotSpawner` data) persists for the
+  rest of the session. It also carries a baked `DynamicBuffer<MicrobotSpawnedElement>` (`Entity Value`)
+  that the system fills with every instantiated bot's `Entity`, giving other systems/tools a way to look
+  up "which bots came from this spawner" later. Kept the existing two-pass structural-change discipline:
+  instantiated entities are collected into a local `NativeList<Entity>` first, and the buffer is only
+  fetched fresh *after* all `Instantiate` calls for that spawner finish (a `DynamicBuffer` handle held
+  across a structural change is stale/unsafe) — then appended in one pass.
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.

@@ -10,5 +10,6 @@ namespace HippoLib.MicroBots
         public float3 SpawnCenter;
         public float3 SpawnAreaSize;
         public float SpawnHeight;
+        public bool HasSpawned;
     }
 }

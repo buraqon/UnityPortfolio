@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/BotSpanSpec.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/BotSpanSpec.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/CubeWireframeBuilder.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/Blueprint/CubeWireframeBuilder.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" afterDir="false" />
-    </list>
+    <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -114,7 +108,7 @@
       <workItem from="1786104622300" duration="6062000" />
       <workItem from="1786117174430" duration="2938000" />
       <workItem from="1786133413008" duration="7506000" />
-      <workItem from="1786160835475" duration="2288000" />
+      <workItem from="1786160835475" duration="2663000" />
     </task>
     <servers />
   </component>
