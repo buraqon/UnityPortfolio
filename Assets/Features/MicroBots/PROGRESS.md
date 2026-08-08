@@ -708,6 +708,40 @@ behind the math. The short version:
   in the destination's general direction as an intermediate `GoalPoint` instead of the final destination,
   re-evaluating once each intermediate point is reached (greedy one-hop-at-a-time, not full pathfinding -
   a real graph-search version was discussed as a fallback if greedy gets stuck in a local dead end).
+- **Built the greedy intermediate-climbing path in `MicrobotNavigationSystem`.** Both goal sources (dock
+  commands, follow command) now route their "real" destination through a shared `ResolveGoalPoint` helper
+  instead of arming it directly - extracted the previously-inline dock-command and follow-command loop
+  bodies into `ProcessDockCommands`/`ProcessFollowCommand` static methods (called from `OnUpdate`) so each
+  source's logic reads as one self-contained unit, both funneling into the same climbing logic rather than
+  duplicating it.
+  `ResolveGoalPoint` behavior: if the destination's height is already within `Tolerance` of the bot's
+  current anchor height - which covers ordinary floor-to-floor cases, since both are ~`0` - it returns the
+  destination directly, **no grid search performed at all** (matches "no intermediate path needed while on
+  the floor"). Otherwise it scans the spatial grid around the anchor (same 3x3-cell shape as the old
+  step-level lookup) and picks the highest reachable `MicrobotClimbPoints` point that's within a new
+  `MaxHopHeight` (`MicrobotSpatialGridSettings`/`Authoring`, default `0.3f`) of the anchor's *current*
+  height and doesn't overshoot past the destination's height - i.e. one greedy hop closer, not the final
+  goal itself. Because goal-arming re-runs this same resolution every time a leg completes, a bot that's
+  mid-climb (anchor height still far from the destination) keeps getting handed the next hop each cycle -
+  "every step follows the path" - and only gets the real destination once close enough in height again,
+  whether that's from finishing the climb or from never having left the floor to begin with.
+  **Safety fix caught before testing**: if no reachable hop exists, the old plan was to just fall back to
+  the raw destination - but `MicrobotStepMovementSystem` no longer has any height guard at all (removed
+  last session), so handing it an unreachable height would immediately reintroduce the teleport bug.
+  Fallback is instead `(destination.x, anchorPos.y, destination.z)` - walk horizontally toward the
+  destination but stay at the anchor's current, already-proven-safe height. A genuinely unreachable
+  destination now means the bot walks as close as it can and plateaus there, never attempting a jump it
+  can't make. **Not yet tested in Play mode.**
+- **Gotcha: `static` + `SystemAPI` calls compile inconsistently.** `ProcessDockCommands` and
+  `ProcessFollowCommand` were briefly written as `private static` methods; that intermittently broke
+  compilation. `SystemAPI.Query`/`GetComponentLookup`/`TryGetSingleton` aren't plain API calls - they're
+  rewritten by a Roslyn source generator that scans the partial `ISystem` struct's methods, and it doesn't
+  reliably rewrite calls inside `static` methods (works in some compiles, not others - source-generator
+  matching issue, not a real logic bug). Fixed by making both instance methods; `ArmGoal` was also made an
+  instance method for consistency even though it doesn't call `SystemAPI` itself. Rule going forward: any
+  helper method that calls `SystemAPI.*` must be a regular instance method, never `static` - pure
+  computation helpers with no `SystemAPI` calls (`ResolveGoalPoint`, `ConsiderHop`, and the pre-existing
+  `MicrobotIkSystem` helpers like `SolveElbowPlanar`) are fine as `static`.
 - **Microbots can no longer be dock targets.** `MicrobotClimbPointsSystem` no longer adds/removes/updates
   `Dockable` on microbots - it now only maintains `MicrobotClimbPoints`. `Dockable` still exists exactly as
   before for static `Dock` prefabs (baked once, statically, via `DockAuthoring` - untouched). A dock
