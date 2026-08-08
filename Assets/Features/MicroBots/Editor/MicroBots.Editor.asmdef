@@ -1,0 +1,19 @@
+{
+    "name": "MicroBots.Editor",
+    "rootNamespace": "HippoLib.MicroBots",
+    "references": [
+        "MicroBots",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

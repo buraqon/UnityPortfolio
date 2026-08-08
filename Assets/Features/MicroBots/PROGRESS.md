@@ -136,7 +136,7 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
   a one-shot system that instantiates `SpawnCount` copies of a microbot prefab at random positions
   within `SpawnAreaSize` around the spawner's position (plus a fixed `spawnHeight` vertical offset), then destroys the spawner entity so it doesn't
   re-fire. Spawned bots have no dock command by default — they're idle (and thus `Dockable`, once
-  `MicrobotDockableStateSystem` picks them up) until something assigns them one.
+  `MicrobotClimbPointsSystem` picks them up) until something assigns them one.
   **Required prefab-setup change**: `MicrobotAuthoring`'s `targetA`/`targetB` now bake with
   `TransformUsageFlags.WorldSpace` instead of `.Dynamic`, so they can be nested as children of the
   microbot prefab root (needed for the whole bot — root, segments, targets — to instantiate as one
@@ -241,7 +241,7 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
 - **Went back to the `float3`-based `MicrobotIkTargets` after all** (owner-driven, iterated directly in
   the systems this time rather than via the Baker) — `MicrobotIkTargets` is `{ float3 TargetAPos; float3
   TargetBPos; }` again, no entity references, no separate target entities at all. `MicrobotStepMovementSystem`,
-  `MicrobotNavigationSystem`, and `MicrobotDockableStateSystem` all read/write these fields directly on
+  `MicrobotNavigationSystem`, and `MicrobotClimbPointsSystem` all read/write these fields directly on
   the bot's own component instead of going through a `ComponentLookup<LocalTransform>` indirection to a
   separate entity. **Initial values are set lazily, not at bake time**: `MicrobotIkState` gained
   `Initialized`; on a bot's first `MicrobotIkSystem` update, if `!Initialized`, it computes both tip
@@ -267,7 +267,7 @@ unconditionally. `MicrobotIkState` shrank to just `BaseIsSegmentB`. **Required a
 - **Unified "dockable" concept (`Dockable`) so bots can dock onto other bots, not just static Dock
   prefabs** — the ECS answer to "an `IDockable` interface": `Dockable : IComponentData { float3 PointA;
   float3 PointB; }` replaces `MicrobotDockPoints`. `DockAuthoring` bakes it once, statically, same as
-  before (Dock prefabs are *always* dockable). A new `MicrobotDockableStateSystem` (runs after
+  before (Dock prefabs are *always* dockable). A new `MicrobotClimbPointsSystem` (runs after
   `MicrobotStepMovementSystem`) adds/removes `Dockable` on microbots dynamically, based on whether
   they're idle (`!HasGoal && !stepping`) — live-updating its `PointA`/`PointB` to the bot's current
   `MicrobotIkTargets` positions while idle, removing the component entirely the moment the bot starts
@@ -391,12 +391,12 @@ behind the math. The short version:
 
 ## Paused scope (not deleted — resume after single-bot movement is satisfying)
 
-- Multiple bots, spawner/spawn system.
-- Separation/anti-overlap between roaming bots.
-- Climbing over stationary/docked bots (ant-bridge style) and the standable-surface spatial-hash query
-  that would detect it.
-- The "dumb-follower shared-command" controller as a real system (currently just a fixed `destination`
-  field set by hand in the Inspector for one bot — unused by the current IK/step movement).
+- [x] Multiple bots, spawner/spawn system.
+- [ ] Separation/anti-overlap between roaming bots.
+- [ ] Climbing over stationary/docked bots (ant-bridge style) and the standable-surface spatial-hash query
+      that would detect it.
+- [x] The "dumb-follower shared-command" controller as a real system — `MicrobotFollowCommand` singleton
+      + a pass inside `MicrobotNavigationSystem` (see Decisions log).
 
 ## Roadmap
 
@@ -561,7 +561,7 @@ behind the math. The short version:
   destination for that frame — no explicit priority flag needed, just pass ordering. The intent: **any
   future system that wants to move a bot expresses that as data (a new command component +
   `MicrobotNavigationSystem` reading it), never by writing `MicrobotGoal` directly** — `MicrobotGoal` is
-  private to the Navigation ↔ StepMovement handshake. `MicrobotDockableStateSystem`'s idle check
+  private to the Navigation ↔ StepMovement handshake. `MicrobotClimbPointsSystem`'s idle check
   (`!HasGoal && !stepping`) updated to read the new component. **Not yet tested in Play mode.**
   **Deliberate scope note**: manual WASD/`T` keyboard control is *not* routed through
   `MicrobotNavigationSystem` — `MicrobotStepMovementSystem` still reads `MicrobotInputState.MoveInput`
@@ -579,6 +579,120 @@ behind the math. The short version:
   matching the docking-adjacent idea that a bot doesn't need every part of itself to physically arrive,
   just enough of it to be "there." Also let this loop drop its `LocalTransform` dependency entirely
   (reads `MicrobotIkTargets` instead), which was only ever a coarse approximation anyway.
+- **Started the shared spatial-hash grid (climbing + dynamic docking-detection, step 1 of 3).** Climbing
+  (M1.5) and dynamic docking-detection (M2) both need a way to find nearby stationary bots, so they'll
+  share one grid instead of being built twice. New `MicrobotSpatialGrid` (runtime-only singleton, **not**
+  baked — `NativeParallelMultiHashMap<int2, Entity>` can't go through the baking pipeline, so it's created
+  directly by `MicrobotSpatialGridSystem.OnCreate`) is rebuilt every frame: cleared, then every
+  `MicrobotTag` bot that's currently idle (`!HasGoal && !stepping` — same signal `MicrobotClimbPointsSystem`
+  already computes) gets inserted keyed by an `int2` cell from its root `LocalTransform.Position`
+  (`[UpdateAfter(MicrobotIkSystem)]` so the position read is this frame's final one, not stale). Cell size
+  is a tunable singleton (`MicrobotSpatialGridSettings`, baked from a standalone
+  `MicrobotSpatialGridAuthoring` GameObject), falling back to `1f` if no such GameObject exists in the
+  scene. **Deliberately no occupancy/claim filtering at all** — a bot stays in the grid (climbable) and
+  every one of its `Dockable` points stays a valid target (dockable) no matter how many other bots are
+  already touching it, since junctions can legitimately be N-way (e.g. 3 bots meeting at a cube corner);
+  there's no cap to enforce, so there's nothing to track. This is infrastructure only — no consumer reads
+  from the grid yet. Planned order: (1) this grid, (2) climbing consumer (step-height lookup in
+  `MicrobotStepMovementSystem`), (3) dynamic docking-detection consumer (extremity searches the grid
+  instead of walking `MicrobotDockCommandAuthoring`'s hand-authored list). **Not yet tested in Play mode.**
+- **Climbing consumer (step 2 of 3).** `MicrobotStepMovementSystem` now resolves a non-final-approach
+  step's landing height by querying `MicrobotSpatialGrid` instead of hardcoding flat ground (`0f`):
+  computes the intended landing X/Z (using the post-turn `HeadingAngle`, same forward-vector math as the
+  live per-frame lerp target), scans the landing cell + its 8 neighbors for any other idle bot within
+  `CellSize`, and if found, uses the flat `StandableHeight` from `MicrobotSpatialGridSettings` instead of
+  `0f` — that's the whole climbing effect (walk a straight line horizontally, but land higher when
+  there's a bot underfoot). Final-approach steps (landing exactly on a `GoalPoint`) are unaffected — they
+  keep using the goal's own authored height, no grid lookup needed. Height is still only decided once at
+  step-start and held fixed for the step's duration (`StepTargetHeight`), matching the existing
+  X/Z-drifts-but-height-doesn't approximation already in place for turning mid-step.
+  **Self-exclusion bug caught before testing**: the grid can contain the querying bot itself (built last
+  frame, one frame of staleness by design - see the grid entry above), which would make a bot detect its
+  own body as a climbable neighbor of its own landing spot. Query now takes the stepping bot's own
+  `Entity` and explicitly skips it as a candidate. **Not yet tested in Play mode.**
+- **Added an opt-out for follow-command, as its own tag component rather than a field on `MicrobotTag`.**
+  `MicrobotTag` stays a pure zero-size marker (every system already assumes `.WithAll<MicrobotTag>()`
+  queries carry no data - bolting state onto it would be an easy-to-miss footgun for future systems). New
+  `MicrobotIgnoresFollowCommand` (empty tag), added via an `ignoreFollowCommand` checkbox on
+  `MicrobotAuthoring`'s `Baker`; `MicrobotNavigationSystem`'s follow-command pass now has
+  `.WithNone<MicrobotIgnoresFollowCommand>()`. There's still no way to pin a bot down after the fact at
+  runtime (only at bake time) - that's fine for now since "stationary" itself isn't a runtime-toggleable
+  flag either, it's just the natural `!HasGoal && !stepping` state.
+- **Fixed: bot teleported straight to an elevated destination instead of climbing up to it.** Owner's
+  first real climbing test (a follow-command destination placed above a stationary bot) revealed that
+  `isFinalApproach` only ever checked *horizontal* distance to the goal
+  (`remaining <= StepSize`) — the moment that was true, the step aimed exactly at the goal's literal 3D
+  position (height included), completely bypassing the climbing grid by design (final-approach steps
+  trust the goal's authored height outright, see the climbing-consumer entry above). If the bot got
+  horizontally close to the destination while still down at ground level, it would flip into
+  final-approach and, in one step, jump straight up to the destination's exact height — regardless of
+  whatever obstacle sat physically between them. Fixed by also requiring the **anchor's current height**
+  to already be within `GoalTolerance` of `GoalPoint.y` before `isFinalApproach` can be true
+  (`MicrobotStepMovementSystem.cs`, step-start block). Until that's satisfied, steps stay in ordinary
+  climbing mode (grid-height lookup, normal toggle-and-alternate), so a bot has to actually climb its way
+  up to roughly the right elevation via real intermediate steps before the system ever trusts a direct
+  line to the goal - it now only "snaps precisely" once it's already there in height, not just in X/Z.
+  **Not yet retested in Play mode.**
+- **Replaced the flat `StandableHeight` constant with real per-candidate geometry.** Debug logging
+  (temporarily added to `MicrobotStepMovementSystem`, `[BurstCompile]` stripped so `Debug.Log` could run)
+  confirmed the spatial-hash climbing lookup itself was working correctly - it found the stationary bot
+  and returned a climb height every time. The actual problem was the height value itself: `StandableHeight`
+  was an arbitrary flat guess (`0.2`) completely disconnected from a bot's real geometry, when a fully
+  elongated 2-segment bot (owner: "the bots are .8m each when they are fully elongated") can reach up to
+  segment-length-sum tall depending on pose. Removed `StandableHeight` from `MicrobotSpatialGridSettings`/
+  `MicrobotSpatialGridAuthoring` entirely; `SampleStandableHeight` now looks up the candidate's own
+  `MicrobotIkTargets` and uses `max(TargetAPos.y, TargetBPos.y)` — the candidate's actual current highest
+  extremity — so climbable height reflects that specific bot's real current stance instead of a guessed
+  constant. **Debug logging is still active** (`[BurstCompile]` still stripped from
+  `MicrobotStepMovementSystem.OnUpdate`) pending a retest with a destination height that's actually
+  reachable via a single climb (the earlier 1.8-high test destination was never reachable regardless of
+  this fix, since it's more than double even a fully-elongated single bot's height - that's a multi-bot-
+  stacking problem, out of scope for now). **Not yet retested in Play mode.**
+- **Split climbing from docking: new `MicrobotClimbPoints` (3 points) alongside `Dockable` (2 points),
+  deliberately separate.** Owner: any stationary bot should be climbable at any of 3 points - its two
+  extremities *or* its elbow - "ant-bridge" style, not just at the feet; but shape-forming connections
+  must stay extremity-only, so `Dockable` is untouched and still only ever has `PointA`/`PointB`. New
+  `MicrobotClimbPoints` (`PointA`, `PointB`, `Elbow`) is maintained by `MicrobotClimbPointsSystem`
+  alongside `Dockable`, added/removed under the exact same idle gate (now also reads the bot's own root
+  `LocalTransform.Position` for `Elbow`). `MicrobotStepMovementSystem`'s `SampleStandableHeight` now reads
+  `MicrobotClimbPoints` instead of raw `MicrobotIkTargets`, taking the max of all 3 points instead of just
+  the 2 extremities - a bot bent into an arch (elbow higher than both feet) now correctly offers its elbow
+  as the tallest standable point, which the old extremities-only lookup could never represent. **Not yet
+  retested in Play mode** (debug logging from the earlier climbing investigation is still active pending
+  this retest - see the `[BurstCompile]`-stripped note above).
+- **Fixed: climbing could jump straight to a far-above candidate point in one step (e.g. leaping to the
+  top of a 2-bot stack instead of climbing bot 1, then bot 2).** `SampleStandableHeight` used to return
+  the single tallest point found among ANY nearby candidate, with no regard for how far above the
+  anchor's current height that point actually was - so if a stacked bot's elbow happened to sit at
+  `2.28` while the walker was still at `0`, the very next step targeted `2.28` directly (smoothly lerped
+  over one step's duration, but still an unrealistic single-step leap, not a two-stage climb). Owner's
+  framing: **a point can only gain height by climbing something that's actually within reach right now -
+  it should stay at `0` if nothing reachable is nearby**, not partially/artificially capped toward an
+  unreachable target. Added `MicrobotSpatialGridSettings.MaxClimbHeight` (authored via
+  `MicrobotSpatialGridAuthoring`, default `0.3f`); `SampleStandableHeight` now takes the anchor's current
+  height and only counts a candidate's individual point (`PointA`/`PointB`/`Elbow`, checked separately,
+  not just the candidate's overall max) if `point.y <= anchorHeight + MaxClimbHeight` - a point beyond
+  reach is ignored entirely for that step, exactly as if it weren't there. This forces genuinely
+  incremental climbing: a 2-bot stack now requires climbing bot 1 first (bringing the anchor's height up
+  within reach of bot 2's points) before bot 2's higher points become reachable at all, rather than being
+  visible as a single giant leap from the start. **Not yet retested in Play mode** (debug logging from
+  the earlier investigations is still active).
+- **Cleaned up after the climbing investigation.** Removed all temporary `Debug.Log` calls and restored
+  `[BurstCompile]` on `MicrobotStepMovementSystem`/`OnUpdate`; trimmed several over-long comments added
+  during debugging (`MicrobotClimbPoints`, `MicrobotSpatialGridSettings`, `MicrobotSpatialGrid`,
+  `MicrobotSpatialGridSystem`) back down to one line each. `SampleStandableHeight` dropped its
+  `nearestDistance`/`candidateCount` diagnostic `out` parameters since nothing but the removed logging
+  used them. **Climbing is left in a not-fully-working state** - the reach-limited (`MaxClimbHeight`)
+  version is in place and should prevent single-step leaps to a far-above point, but it was not
+  successfully verified end-to-end (still landing on/near the destination height in ways that didn't look
+  like genuine incremental climbing before the owner asked to stop and clean up). Revisit this fresh
+  rather than assuming the current state is correct.
+- **Microbots can no longer be dock targets.** `MicrobotClimbPointsSystem` no longer adds/removes/updates
+  `Dockable` on microbots - it now only maintains `MicrobotClimbPoints`. `Dockable` still exists exactly as
+  before for static `Dock` prefabs (baked once, statically, via `DockAuthoring` - untouched). A dock
+  command whose list happens to reference a microbot entity will now simply never find a `Dockable` there
+  and stay waiting, since only real `Dock` prefabs carry it anymore. Bot-to-bot climbing (via
+  `MicrobotClimbPoints`) is unaffected - this only removes bot-to-bot *docking*.
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.

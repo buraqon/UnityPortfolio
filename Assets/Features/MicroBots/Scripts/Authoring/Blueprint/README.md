@@ -20,6 +20,12 @@ in the core types.
 | `CubeWireframeBuilder.cs` | Cube settings → blueprint. The only cube-aware code |
 | `CubeBlueprintSource.cs` | `MonoBehaviour` holding one blueprint in the scene, with gizmos |
 | `BLUEPRINT.md` | Design rationale and derivations |
+| `../../../Editor/CubeBlueprintSourceEditor.cs` | Custom inspector: live counts + continuous validation |
+
+Editor code lives in `Assets/Features/MicroBots/Editor/` under its own `MicroBots.Editor.asmdef`
+(Editor-only platform). It has to be a separate assembly: `MicroBots.asmdef` sits at the feature root and
+covers every subfolder, so Unity's magic `Editor/` folder rule does **not** apply here — a `using
+UnityEditor` inside the runtime assembly would break player builds.
 
 ## Core model
 

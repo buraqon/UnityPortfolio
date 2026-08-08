@@ -1,4 +1,5 @@
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -17,16 +18,20 @@ namespace HippoLib.MicroBots
 
             SystemAPI.TryGetSingleton<MicrobotInputState>(out var inputState);
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
+            var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
+            var climbPointsLookup = SystemAPI.GetComponentLookup<MicrobotClimbPoints>(true);
 
-            foreach (var (ikTargets, ikState, stepState, goal) in SystemAPI
+            var hasGrid = SystemAPI.TryGetSingleton<MicrobotSpatialGrid>(out var grid);
+            var maxClimbHeight = SystemAPI.TryGetSingleton<MicrobotSpatialGridSettings>(out var gridSettings)
+                ? gridSettings.MaxClimbHeight
+                : 0f;
+
+            foreach (var (ikTargets, ikState, stepState, goal, entity) in SystemAPI
                          .Query<RefRW<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<MicrobotStepState>, RefRW<MicrobotGoal>>()
-                         .WithAll<MicrobotTag>())
+                         .WithAll<MicrobotTag>()
+                         .WithEntityAccess())
             {
                 var baseIsB = ikState.ValueRO.BaseIsSegmentB;
-                // var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
-                // var freeEntity = baseIsB ? ikTargets.ValueRO.TargetAEntity : ikTargets.ValueRO.TargetBEntity;
-
                 var anchorPos = baseIsB ? ikTargets.ValueRO.TargetBPos : ikTargets.ValueRO.TargetAPos;
                 var freePos = baseIsB ? ikTargets.ValueRO.TargetAPos : ikTargets.ValueRO.TargetBPos;
 
@@ -34,7 +39,6 @@ namespace HippoLib.MicroBots
 
                 if (hasGoal && math.distance(freePos, goal.ValueRO.GoalPoint) <= goal.ValueRO.GoalTolerance)
                 {
-                    // Already at the goal without needing to move - hand off immediately, no wasted step.
                     goal.ValueRW.HasGoal = false;
                     stepState.ValueRW.Initialized = false;
                     stepState.ValueRW.StepProgress = 0f;
@@ -75,25 +79,42 @@ namespace HippoLib.MicroBots
                     if (wantsStep)
                     {
                         float stepDistance;
-                        float targetHeight;
                         float direction;
+                        var isFinalApproach = false;
 
                         if (hasGoal)
                         {
                             var anchorToGoal = goal.ValueRO.GoalPoint - anchorPos;
                             anchorToGoal.y = 0f;
                             var remaining = math.length(anchorToGoal);
-                            var isFinalApproach = remaining <= stepState.ValueRO.StepSize;
+                            var closeHorizontally = remaining <= stepState.ValueRO.StepSize;
+                            var closeInHeight = math.abs(anchorPos.y - goal.ValueRO.GoalPoint.y) <= goal.ValueRO.GoalTolerance;
+                            isFinalApproach = closeHorizontally && closeInHeight;
                             stepDistance = math.min(stepState.ValueRO.StepSize, remaining);
-                            targetHeight = isFinalApproach ? goal.ValueRO.GoalPoint.y : 0f;
                             direction = 1f;
                             stepState.ValueRW.IsFinalApproach = isFinalApproach;
                         }
                         else
                         {
                             stepDistance = stepState.ValueRO.StepSize;
-                            targetHeight = 0f;
                             direction = math.sign(inputState.MoveInput.y);
+                        }
+
+                        float targetHeight;
+                        if (isFinalApproach)
+                        {
+                            targetHeight = goal.ValueRO.GoalPoint.y;
+                        }
+                        else
+                        {
+                            var landingHeadingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
+                            var landingForward = math.rotate(landingHeadingRotation, new float3(0f, 0f, 1f));
+                            var landingPos = anchorPos + landingForward * (direction * stepDistance);
+
+                            targetHeight = hasGrid
+                                ? SampleStandableHeight(grid.Cells, grid.CellSize, maxClimbHeight, anchorPos.y,
+                                    transforms, climbPointsLookup, landingPos, entity)
+                                : 0f;
                         }
 
                         stepState.ValueRW.StepStartPosition = freePos;
@@ -115,8 +136,7 @@ namespace HippoLib.MicroBots
 
                 var headingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
                 var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
-                var liveAnchorPos = anchorPos;
-                var currentStepTarget = liveAnchorPos + forwardDir * stepState.ValueRO.StepSignedDistance;
+                var currentStepTarget = anchorPos + forwardDir * stepState.ValueRO.StepSignedDistance;
                 currentStepTarget.y = stepState.ValueRO.StepTargetHeight;
 
                 var newPosition = math.lerp(stepState.ValueRO.StepStartPosition, currentStepTarget, t);
@@ -126,7 +146,6 @@ namespace HippoLib.MicroBots
                     ikTargets.ValueRW.TargetAPos = newPosition;
                 else
                     ikTargets.ValueRW.TargetBPos = newPosition;
-
 
                 if (progressBeforeAdvance < 1f && newProgress >= 1f)
                 {
@@ -139,13 +158,8 @@ namespace HippoLib.MicroBots
                         }
                         else if (!stepState.ValueRO.IsFinalApproach)
                         {
-                            // Still far from the goal - this was an ordinary full-stride step, so toggle
-                            // normally and let the gait alternate (an implicit path of steps toward the
-                            // goal), instead of suppressing the toggle and getting stuck at max reach.
                             ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
                         }
-                        // else: within final-approach range but missed tolerance - don't toggle, the same
-                        // extremity takes another (re-aimed, re-sized) step next frame.
                     }
                     else
                     {
@@ -153,6 +167,56 @@ namespace HippoLib.MicroBots
                     }
                 }
             }
+        }
+
+        private static float SampleStandableHeight(
+            NativeParallelMultiHashMap<int2, Entity> cells,
+            float cellSize,
+            float maxClimbHeight,
+            float anchorHeight,
+            ComponentLookup<LocalTransform> transforms,
+            ComponentLookup<MicrobotClimbPoints> climbPointsLookup,
+            float3 landingPos,
+            Entity self)
+        {
+            var highest = 0f;
+            var maxReachableHeight = anchorHeight + maxClimbHeight;
+            var landingCell = new int2((int)math.floor(landingPos.x / cellSize), (int)math.floor(landingPos.z / cellSize));
+
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                for (var dz = -1; dz <= 1; dz++)
+                {
+                    var cell = landingCell + new int2(dx, dz);
+                    if (!cells.TryGetFirstValue(cell, out var candidate, out var iterator))
+                        continue;
+
+                    do
+                    {
+                        if (candidate == self || !transforms.HasComponent(candidate) || !climbPointsLookup.HasComponent(candidate))
+                            continue;
+
+                        var candidatePos = transforms[candidate].Position;
+                        var horizontalDistance = math.distance(
+                            new float2(landingPos.x, landingPos.z),
+                            new float2(candidatePos.x, candidatePos.z));
+
+                        if (horizontalDistance <= cellSize)
+                        {
+                            var climbPoints = climbPointsLookup[candidate];
+
+                            if (climbPoints.PointA.y <= maxReachableHeight)
+                                highest = math.max(highest, climbPoints.PointA.y);
+                            if (climbPoints.PointB.y <= maxReachableHeight)
+                                highest = math.max(highest, climbPoints.PointB.y);
+                            if (climbPoints.Elbow.y <= maxReachableHeight)
+                                highest = math.max(highest, climbPoints.Elbow.y);
+                        }
+                    } while (cells.TryGetNextValue(out candidate, ref iterator));
+                }
+            }
+
+            return highest;
         }
     }
 }

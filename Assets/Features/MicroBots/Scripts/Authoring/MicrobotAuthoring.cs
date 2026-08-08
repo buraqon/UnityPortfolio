@@ -15,6 +15,7 @@ namespace HippoLib.MicroBots
         public float turnSpeed = 90f;
         public float turnGate = 30f;
         public float headingEpsilon = 2f;
+        public bool ignoreFollowCommand;
 
         private class Baker : Baker<MicrobotAuthoring>
         {
@@ -22,7 +23,10 @@ namespace HippoLib.MicroBots
             {
                 var root = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<MicrobotTag>(root);
-   
+
+                if (authoring.ignoreFollowCommand)
+                    AddComponent<MicrobotIgnoresFollowCommand>(root);
+
                 AddComponent(root, new MicrobotIkState());
                 AddComponent(root, new MicrobotGoal());
 

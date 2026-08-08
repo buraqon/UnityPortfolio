@@ -6,7 +6,7 @@ namespace HippoLib.MicroBots
 {
     [BurstCompile]
     [UpdateAfter(typeof(MicrobotStepMovementSystem))]
-    public partial struct MicrobotDockableStateSystem : ISystem
+    public partial struct MicrobotClimbPointsSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
         {
@@ -21,32 +21,33 @@ namespace HippoLib.MicroBots
             var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-            foreach (var (stepState, goal, ikTargets, entity) in SystemAPI
-                         .Query<RefRO<MicrobotStepState>, RefRO<MicrobotGoal>, RefRO<MicrobotIkTargets>>()
+            foreach (var (stepState, goal, ikTargets, transform, entity) in SystemAPI
+                         .Query<RefRO<MicrobotStepState>, RefRO<MicrobotGoal>, RefRO<MicrobotIkTargets>, RefRO<LocalTransform>>()
                          .WithAll<MicrobotTag>()
                          .WithEntityAccess())
             {
                 var stepping = stepState.ValueRO.Initialized && stepState.ValueRO.StepProgress < 1f;
                 var isIdle = !goal.ValueRO.HasGoal && !stepping;
-                var hasDockable = SystemAPI.HasComponent<Dockable>(entity);
+                var hasClimbPoints = SystemAPI.HasComponent<MicrobotClimbPoints>(entity);
 
                 if (isIdle)
                 {
                     var pointA = ikTargets.ValueRO.TargetAPos;
                     var pointB = ikTargets.ValueRO.TargetBPos;
+                    var elbow = transform.ValueRO.Position;
 
-                    if (hasDockable)
+                    if (hasClimbPoints)
                     {
-                        SystemAPI.SetComponent(entity, new Dockable { PointA = pointA, PointB = pointB });
+                        SystemAPI.SetComponent(entity, new MicrobotClimbPoints { PointA = pointA, PointB = pointB, Elbow = elbow });
                     }
                     else
                     {
-                        ecb.AddComponent(entity, new Dockable { PointA = pointA, PointB = pointB });
+                        ecb.AddComponent(entity, new MicrobotClimbPoints { PointA = pointA, PointB = pointB, Elbow = elbow });
                     }
                 }
-                else if (hasDockable)
+                else if (hasClimbPoints)
                 {
-                    ecb.RemoveComponent<Dockable>(entity);
+                    ecb.RemoveComponent<MicrobotClimbPoints>(entity);
                 }
             }
         }

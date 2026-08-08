@@ -100,7 +100,8 @@ namespace HippoLib.MicroBots
             {
                 foreach (var (goalComponent, ikTargets) in SystemAPI
                              .Query<RefRW<MicrobotGoal>, RefRO<MicrobotIkTargets>>()
-                             .WithAll<MicrobotTag>())
+                             .WithAll<MicrobotTag>()
+                             .WithNone<MicrobotIgnoresFollowCommand>())
                 {
                     if (goalComponent.ValueRO.HasGoal)
                         continue;
