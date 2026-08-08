@@ -21,15 +21,17 @@ namespace HippoLib.MicroBots
             var stepLanded = false;
 
             foreach (var (ikTargets, ikState, stepState) in SystemAPI
-                         .Query<RefRO<MicrobotIkTargets>, RefRO<MicrobotIkState>, RefRW<MicrobotStepState>>()
-                         .WithAll<MicrobotTag>())
+                         .Query<RefRW<MicrobotIkTargets>, RefRO<MicrobotIkState>, RefRW<MicrobotStepState>>()
+                         .WithAll<MicrobotTag>()) 
             {
                 var baseIsB = ikState.ValueRO.BaseIsSegmentB;
-                var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
-                var freeEntity = baseIsB ? ikTargets.ValueRO.TargetAEntity : ikTargets.ValueRO.TargetBEntity;
+                // var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
+                // var freeEntity = baseIsB ? ikTargets.ValueRO.TargetAEntity : ikTargets.ValueRO.TargetBEntity;
+                
+                var anchorPos = baseIsB ? ikTargets.ValueRO.TargetBPos : ikTargets.ValueRO.TargetAPos;
+                var freePos = baseIsB ? ikTargets.ValueRO.TargetAPos : ikTargets.ValueRO.TargetBPos;
 
                 var hasGoal = stepState.ValueRO.HasGoal;
-                var freePos = transforms[freeEntity].Position;
 
                 if (hasGoal && math.distance(freePos, stepState.ValueRO.GoalPoint) <= stepState.ValueRO.GoalTolerance)
                 {
@@ -73,7 +75,6 @@ namespace HippoLib.MicroBots
                     var wantsStep = hasGoal ? facingOk : math.abs(inputState.MoveInput.y) > 0.0001f;
                     if (wantsStep)
                     {
-                        var anchorPos = transforms[anchorEntity].Position;
                         float stepDistance;
                         float targetHeight;
                         float direction;
@@ -115,16 +116,18 @@ namespace HippoLib.MicroBots
 
                 var headingRotation = quaternion.RotateY(stepState.ValueRO.HeadingAngle);
                 var forwardDir = math.rotate(headingRotation, new float3(0f, 0f, 1f));
-                var liveAnchorPos = transforms[anchorEntity].Position;
+                var liveAnchorPos = anchorPos;
                 var currentStepTarget = liveAnchorPos + forwardDir * stepState.ValueRO.StepSignedDistance;
                 currentStepTarget.y = stepState.ValueRO.StepTargetHeight;
 
                 var newPosition = math.lerp(stepState.ValueRO.StepStartPosition, currentStepTarget, t);
                 newPosition.y += math.sin(t * math.PI) * stepState.ValueRO.StepHeight;
 
-                var freeTransform = transforms[freeEntity];
-                freeTransform.Position = newPosition;
-                transforms[freeEntity] = freeTransform;
+                if (baseIsB)
+                    ikTargets.ValueRW.TargetAPos = newPosition;
+                else
+                    ikTargets.ValueRW.TargetBPos = newPosition;
+                    
 
                 if (progressBeforeAdvance < 1f && newProgress >= 1f)
                 {

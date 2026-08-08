@@ -20,7 +20,6 @@ namespace HippoLib.MicroBots
 
             var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-            var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
 
             foreach (var (stepState, ikTargets, entity) in SystemAPI
                          .Query<RefRO<MicrobotStepState>, RefRO<MicrobotIkTargets>>()
@@ -33,8 +32,8 @@ namespace HippoLib.MicroBots
 
                 if (isIdle)
                 {
-                    var pointA = transforms[ikTargets.ValueRO.TargetAEntity].Position;
-                    var pointB = transforms[ikTargets.ValueRO.TargetBEntity].Position;
+                    var pointA = ikTargets.ValueRO.TargetAPos;
+                    var pointB = ikTargets.ValueRO.TargetBPos;
 
                     if (hasDockable)
                     {

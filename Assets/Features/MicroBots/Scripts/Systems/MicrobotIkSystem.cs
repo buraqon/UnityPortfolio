@@ -18,9 +18,23 @@ namespace HippoLib.MicroBots
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
 
             foreach (var (segments, ikTargets, ikState, transform) in SystemAPI
-                         .Query<RefRO<MicrobotSegments>, RefRO<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<LocalTransform>>()
+                         .Query<RefRO<MicrobotSegments>, RefRW<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<LocalTransform>>()
                          .WithAll<MicrobotTag>())
             {
+                if (!ikState.ValueRO.Initialized)
+                {
+                    var forwardAxis = new float3(0f, 0f, 1f);
+                    var initialRootPos = transform.ValueRO.Position;
+                    var initialRootRotation = transform.ValueRO.Rotation;
+
+                    ikTargets.ValueRW.TargetAPos = initialRootPos +
+                        math.rotate(math.mul(initialRootRotation, segments.ValueRO.RotationA), forwardAxis) * segments.ValueRO.LengthA;
+                    ikTargets.ValueRW.TargetBPos = initialRootPos +
+                        math.rotate(math.mul(initialRootRotation, segments.ValueRO.RotationB), forwardAxis) * segments.ValueRO.LengthB;
+
+                    ikState.ValueRW.Initialized = true;
+                }  
+
                 if (toggleBase)
                 {
                     ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
@@ -32,11 +46,9 @@ namespace HippoLib.MicroBots
                 var endEntity = baseIsB ? segments.ValueRO.SegmentAEntity : segments.ValueRO.SegmentBEntity;
                 var endLength = baseIsB ? segments.ValueRO.LengthA : segments.ValueRO.LengthB;
 
-                var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
-                var freeEntity = baseIsB ? ikTargets.ValueRO.TargetAEntity : ikTargets.ValueRO.TargetBEntity;
-
-                var anchorPos = transforms[anchorEntity].Position;
-                var targetPos = transforms[freeEntity].Position;
+                
+                var anchorPos = baseIsB ? ikTargets.ValueRO.TargetBPos : ikTargets.ValueRO.TargetAPos;
+                var targetPos = baseIsB ? ikTargets.ValueRO.TargetAPos : ikTargets.ValueRO.TargetBPos;
 
                 var toTargetHorizontal = targetPos - anchorPos;
                 toTargetHorizontal.y = 0f;

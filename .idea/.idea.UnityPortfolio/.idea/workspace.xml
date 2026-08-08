@@ -2,11 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ba66c258-e11c-4bbd-9ffe-d04e16ceacc9" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Demo/MicroBots/Mircobots_Subscene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/PROGRESS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UnityPortfolio/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Authoring/MicrobotAuthoring.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotIkTargets.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Components/MicrobotIkTargets.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotSpawnSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotSpawnSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotDockableStateSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotDockableStateSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotIkSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotIkSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotNavigationSystem.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Features/MicroBots/Scripts/Systems/MicrobotStepMovementSystem.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,9 +22,7 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/554A01C2571EC0C7644C8151/SystemGenerator/Unity.Entities.SourceGen.SystemGenerator.SystemGenerator/MicrobotIkSystem__System_18665821740.g.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/554A01C2571EC0C7644C8151/SystemGenerator/Unity.Entities.SourceGen.SystemGenerator.SystemGenerator/MicrobotStepMovementSystem__System_7097534370.g.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/EB0095E242D3B168611467B4/JobEntityGenerator/Unity.Entities.SourceGen.JobEntityGenerator.JobEntityGenerator/RotationSpeedSystem__JobEntity_119327154415.g.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/554A01C2571EC0C7644C8151/SystemGenerator/Unity.Entities.SourceGen.SystemGenerator.SystemGenerator/MicrobotNavigationSystem__System_6279802360.g.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Assets/Features/ECSDemo/CubeSpawnerSystem.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.entities@d66668920c3f/Unity.Entities.Hybrid/Baking/Baker.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.entities@d66668920c3f/Unity.Entities/ISystem.cs" root0="SKIP_HIGHLIGHTING" />
@@ -116,6 +116,7 @@
       <workItem from="1786104622300" duration="6062000" />
       <workItem from="1786117174430" duration="2938000" />
       <workItem from="1786133413008" duration="7506000" />
+      <workItem from="1786160835475" duration="1747000" />
     </task>
     <servers />
   </component>

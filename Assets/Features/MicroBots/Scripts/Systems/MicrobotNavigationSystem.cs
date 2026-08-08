@@ -16,14 +16,13 @@ namespace HippoLib.MicroBots
             state.CompleteDependency();
 
             var deltaTime = SystemAPI.Time.DeltaTime;
-            var transforms = SystemAPI.GetComponentLookup<LocalTransform>(true);
             var dockableLookup = SystemAPI.GetComponentLookup<Dockable>(true);
-            var ikTargetsLookup = SystemAPI.GetComponentLookup<MicrobotIkTargets>(true);
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
             var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
 
-            foreach (var (dockCommand, dockList) in SystemAPI
-                         .Query<RefRW<MicrobotDockCommand>, DynamicBuffer<MicrobotDockListElement>>())
+            foreach (var (dockCommand, ikTargets, dockList) in SystemAPI
+                         .Query<RefRW<MicrobotDockCommand>, RefRO<MicrobotIkTargets>,
+                             DynamicBuffer<MicrobotDockListElement>>())
             {
                 if (dockList.Length == 0)
                     continue;
@@ -33,7 +32,8 @@ namespace HippoLib.MicroBots
                     dockCommand.ValueRW.RestTimer -= deltaTime;
                     if (dockCommand.ValueRO.RestTimer <= 0f)
                     {
-                        dockCommand.ValueRW.CurrentDockIndex = (dockCommand.ValueRO.CurrentDockIndex + 1) % dockList.Length;
+                        dockCommand.ValueRW.CurrentDockIndex =
+                            (dockCommand.ValueRO.CurrentDockIndex + 1) % dockList.Length;
                         dockCommand.ValueRW.Docked = false;
                         dockCommand.ValueRW.PointAClaimed = false;
                         dockCommand.ValueRW.PointBClaimed = false;
@@ -44,25 +44,22 @@ namespace HippoLib.MicroBots
 
                 var microbotEntity = dockCommand.ValueRO.MicrobotEntity;
                 var dockEntity = dockList[dockCommand.ValueRO.CurrentDockIndex].DockEntity;
-                if (!ikTargetsLookup.HasComponent(microbotEntity) || !dockableLookup.HasComponent(dockEntity))
+                if (!dockableLookup.HasComponent(dockEntity))
                     continue;
 
                 var dockPoints = dockableLookup[dockEntity];
-                var ikTargets = ikTargetsLookup[microbotEntity];
 
-                if (!transforms.HasComponent(ikTargets.TargetAEntity) || !transforms.HasComponent(ikTargets.TargetBEntity))
-                    continue;
+                var posA = ikTargets.ValueRO.TargetAPos;
+                var posB = ikTargets.ValueRO.TargetBPos;
 
-                var posA = transforms[ikTargets.TargetAEntity].Position;
-                var posB = transforms[ikTargets.TargetBEntity].Position;
                 var tolerance = dockCommand.ValueRO.Tolerance;
 
                 var pointAClaimed = dockCommand.ValueRO.PointAClaimed
-                    || math.distance(posA, dockPoints.PointA) <= tolerance
-                    || math.distance(posB, dockPoints.PointA) <= tolerance;
+                                    || math.distance(posA, dockPoints.PointA) <= tolerance
+                                    || math.distance(posB, dockPoints.PointA) <= tolerance;
                 var pointBClaimed = dockCommand.ValueRO.PointBClaimed
-                    || math.distance(posA, dockPoints.PointB) <= tolerance
-                    || math.distance(posB, dockPoints.PointB) <= tolerance;
+                                    || math.distance(posA, dockPoints.PointB) <= tolerance
+                                    || math.distance(posB, dockPoints.PointB) <= tolerance;
 
                 dockCommand.ValueRW.PointAClaimed = pointAClaimed;
                 dockCommand.ValueRW.PointBClaimed = pointBClaimed;
@@ -79,8 +76,7 @@ namespace HippoLib.MicroBots
                     continue;
 
                 var ikState = ikStateLookup[microbotEntity];
-                var freeEntity = ikState.BaseIsSegmentB ? ikTargets.TargetAEntity : ikTargets.TargetBEntity;
-                var freePos = transforms[freeEntity].Position;
+                var freePos = ikState.BaseIsSegmentB ? ikTargets.ValueRO.TargetAPos : ikTargets.ValueRO.TargetBPos;
 
                 float3 goal;
                 if (!pointAClaimed && !pointBClaimed)
