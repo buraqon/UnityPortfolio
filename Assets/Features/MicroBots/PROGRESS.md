@@ -547,6 +547,22 @@ behind the math. The short version:
   the shared singleton. The manual `T`-key toggle in `MicrobotIkSystem` is untouched and still reads
   `MicrobotInputState.ToggleBase` — that one's meant to stay a global broadcast (manual single/shared-bot
   testing) since it comes straight from the keyboard, not from any particular bot's landing.
+- **Centralized goal-arming in `MicrobotNavigationSystem`; extracted the goal fields into their own
+  component.** New `MicrobotGoal` (`bool HasGoal; float3 GoalPoint; float GoalTolerance;`) replaces the
+  three fields that used to live inline on `MicrobotStepState`; baked onto every microbot root alongside
+  `MicrobotIkState`/`MicrobotStepState` in `MicrobotAuthoring`'s `Baker`. The write contract is now
+  explicit and asymmetric by design: **only `MicrobotNavigationSystem` ever sets `HasGoal = true`** (plus
+  `GoalPoint`/`GoalTolerance`) — `MicrobotStepMovementSystem` only *reads* `GoalPoint`/`GoalTolerance` and
+  is the sole system allowed to *clear* `HasGoal` back to `false`, on arrival. `MicrobotFollowCommandSystem`
+  is gone — its logic (read the `MicrobotFollowCommand` singleton, arm a goal for any `!HasGoal` bot not
+  yet within tolerance) is now a second pass inside `MicrobotNavigationSystem.OnUpdate`, after the
+  existing dock-command pass. Because both passes only act on `!HasGoal` bots, and the dock-command pass
+  runs first, a bot with an active dock-command linker naturally wins over the shared follow-command
+  destination for that frame — no explicit priority flag needed, just pass ordering. The intent: **any
+  future system that wants to move a bot expresses that as data (a new command component +
+  `MicrobotNavigationSystem` reading it), never by writing `MicrobotGoal` directly** — `MicrobotGoal` is
+  private to the Navigation ↔ StepMovement handshake. `MicrobotDockableStateSystem`'s idle check
+  (`!HasGoal && !stepping`) updated to read the new component. **Not yet tested in Play mode.**
 - **Standalone feature** — per project rule, MicroBots does not reference or depend on any other
   `Assets/Features/` folder (e.g. Pooling, Conjure, Dependency) unless a dependency is explicitly
   requested later.

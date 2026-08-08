@@ -24,6 +24,7 @@ namespace HippoLib.MicroBots
                 AddComponent<MicrobotTag>(root);
    
                 AddComponent(root, new MicrobotIkState());
+                AddComponent(root, new MicrobotGoal());
 
                 AddComponent(root, new MicrobotStepState
                 {

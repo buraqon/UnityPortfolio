@@ -21,13 +21,13 @@ namespace HippoLib.MicroBots
             var ecbSingleton = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-            foreach (var (stepState, ikTargets, entity) in SystemAPI
-                         .Query<RefRO<MicrobotStepState>, RefRO<MicrobotIkTargets>>()
+            foreach (var (stepState, goal, ikTargets, entity) in SystemAPI
+                         .Query<RefRO<MicrobotStepState>, RefRO<MicrobotGoal>, RefRO<MicrobotIkTargets>>()
                          .WithAll<MicrobotTag>()
                          .WithEntityAccess())
             {
                 var stepping = stepState.ValueRO.Initialized && stepState.ValueRO.StepProgress < 1f;
-                var isIdle = !stepState.ValueRO.HasGoal && !stepping;
+                var isIdle = !goal.ValueRO.HasGoal && !stepping;
                 var hasDockable = SystemAPI.HasComponent<Dockable>(entity);
 
                 if (isIdle)

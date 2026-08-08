@@ -1,6 +1,7 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace HippoLib.MicroBots
 {
@@ -18,7 +19,7 @@ namespace HippoLib.MicroBots
             var dockableLookup = SystemAPI.GetComponentLookup<Dockable>(true);
             var ikTargetsLookup = SystemAPI.GetComponentLookup<MicrobotIkTargets>(true);
             var ikStateLookup = SystemAPI.GetComponentLookup<MicrobotIkState>(true);
-            var stepStateLookup = SystemAPI.GetComponentLookup<MicrobotStepState>(false);
+            var goalLookup = SystemAPI.GetComponentLookup<MicrobotGoal>(false);
 
             foreach (var (dockCommand, dockList) in SystemAPI
                          .Query<RefRW<MicrobotDockCommand>, DynamicBuffer<MicrobotDockListElement>>())
@@ -71,8 +72,8 @@ namespace HippoLib.MicroBots
                     continue;
                 }
 
-                var stepState = stepStateLookup[microbotEntity];
-                if (stepState.HasGoal)
+                var goalState = goalLookup[microbotEntity];
+                if (goalState.HasGoal)
                     continue;
 
                 var ikState = ikStateLookup[microbotEntity];
@@ -90,10 +91,28 @@ namespace HippoLib.MicroBots
                     goal = pointAClaimed ? dockPoints.PointB : dockPoints.PointA;
                 }
 
-                stepState.HasGoal = true;
-                stepState.GoalPoint = goal;
-                stepState.GoalTolerance = tolerance;
-                stepStateLookup[microbotEntity] = stepState;
+                goalState.HasGoal = true;
+                goalState.GoalPoint = goal;
+                goalState.GoalTolerance = tolerance;
+                goalLookup[microbotEntity] = goalState;
+            }
+
+            if (SystemAPI.TryGetSingleton<MicrobotFollowCommand>(out var followCommand))
+            {
+                foreach (var (goalComponent, transform) in SystemAPI
+                             .Query<RefRW<MicrobotGoal>, RefRO<LocalTransform>>()
+                             .WithAll<MicrobotTag>())
+                {
+                    if (goalComponent.ValueRO.HasGoal)
+                        continue;
+
+                    if (math.distance(transform.ValueRO.Position, followCommand.Destination) <= followCommand.Tolerance)
+                        continue;
+
+                    goalComponent.ValueRW.HasGoal = true;
+                    goalComponent.ValueRW.GoalPoint = followCommand.Destination;
+                    goalComponent.ValueRW.GoalTolerance = followCommand.Tolerance;
+                }
             }
         }
     }

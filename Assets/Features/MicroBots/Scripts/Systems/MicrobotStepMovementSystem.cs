@@ -19,23 +19,23 @@ namespace HippoLib.MicroBots
             var deltaTime = SystemAPI.Time.DeltaTime;
             var transforms = SystemAPI.GetComponentLookup<LocalTransform>(false);
 
-            foreach (var (ikTargets, ikState, stepState) in SystemAPI
-                         .Query<RefRW<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<MicrobotStepState>>()
+            foreach (var (ikTargets, ikState, stepState, goal) in SystemAPI
+                         .Query<RefRW<MicrobotIkTargets>, RefRW<MicrobotIkState>, RefRW<MicrobotStepState>, RefRW<MicrobotGoal>>()
                          .WithAll<MicrobotTag>())
             {
                 var baseIsB = ikState.ValueRO.BaseIsSegmentB;
                 // var anchorEntity = baseIsB ? ikTargets.ValueRO.TargetBEntity : ikTargets.ValueRO.TargetAEntity;
                 // var freeEntity = baseIsB ? ikTargets.ValueRO.TargetAEntity : ikTargets.ValueRO.TargetBEntity;
-                
+
                 var anchorPos = baseIsB ? ikTargets.ValueRO.TargetBPos : ikTargets.ValueRO.TargetAPos;
                 var freePos = baseIsB ? ikTargets.ValueRO.TargetAPos : ikTargets.ValueRO.TargetBPos;
 
-                var hasGoal = stepState.ValueRO.HasGoal;
+                var hasGoal = goal.ValueRO.HasGoal;
 
-                if (hasGoal && math.distance(freePos, stepState.ValueRO.GoalPoint) <= stepState.ValueRO.GoalTolerance)
+                if (hasGoal && math.distance(freePos, goal.ValueRO.GoalPoint) <= goal.ValueRO.GoalTolerance)
                 {
                     // Already at the goal without needing to move - hand off immediately, no wasted step.
-                    stepState.ValueRW.HasGoal = false;
+                    goal.ValueRW.HasGoal = false;
                     stepState.ValueRW.Initialized = false;
                     stepState.ValueRW.StepProgress = 0f;
                     ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
@@ -47,7 +47,7 @@ namespace HippoLib.MicroBots
 
                 if (hasGoal)
                 {
-                    var toGoal = stepState.ValueRO.GoalPoint - freePos;
+                    var toGoal = goal.ValueRO.GoalPoint - freePos;
                     toGoal.y = 0f;
 
                     if (math.lengthsq(toGoal) > 0.0001f)
@@ -80,12 +80,12 @@ namespace HippoLib.MicroBots
 
                         if (hasGoal)
                         {
-                            var anchorToGoal = stepState.ValueRO.GoalPoint - anchorPos;
+                            var anchorToGoal = goal.ValueRO.GoalPoint - anchorPos;
                             anchorToGoal.y = 0f;
                             var remaining = math.length(anchorToGoal);
                             var isFinalApproach = remaining <= stepState.ValueRO.StepSize;
                             stepDistance = math.min(stepState.ValueRO.StepSize, remaining);
-                            targetHeight = isFinalApproach ? stepState.ValueRO.GoalPoint.y : 0f;
+                            targetHeight = isFinalApproach ? goal.ValueRO.GoalPoint.y : 0f;
                             direction = 1f;
                             stepState.ValueRW.IsFinalApproach = isFinalApproach;
                         }
@@ -126,15 +126,15 @@ namespace HippoLib.MicroBots
                     ikTargets.ValueRW.TargetAPos = newPosition;
                 else
                     ikTargets.ValueRW.TargetBPos = newPosition;
-                    
+
 
                 if (progressBeforeAdvance < 1f && newProgress >= 1f)
                 {
                     if (hasGoal)
                     {
-                        if (math.distance(newPosition, stepState.ValueRO.GoalPoint) <= stepState.ValueRO.GoalTolerance)
+                        if (math.distance(newPosition, goal.ValueRO.GoalPoint) <= goal.ValueRO.GoalTolerance)
                         {
-                            stepState.ValueRW.HasGoal = false;
+                            goal.ValueRW.HasGoal = false;
                             ikState.ValueRW.BaseIsSegmentB = !ikState.ValueRO.BaseIsSegmentB;
                         }
                         else if (!stepState.ValueRO.IsFinalApproach)
